@@ -1,0 +1,283 @@
+import { useState, useEffect } from 'react';
+import {
+  Container,
+  Paper,
+  Tabs,
+  Tab,
+  AppBar,
+  Toolbar,
+  Typography,
+  Switch,
+  FormControlLabel,
+  Box
+} from '@mui/material';
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { ref, onValue, set, DataSnapshot } from 'firebase/database';
+import { useAmbiente } from '../contexts/AmbienteContext';
+
+// Tipos
+interface ErroConfirmacao {
+  id: string;
+  mensagem: string;
+  data: Date;
+  telefones: string[];
+  nomePaciente: string;
+  medico: string;
+  dataHora: string;
+}
+
+interface TelefoneCancelado {
+  WhatsApp: string;
+  Reenviar: string;
+}
+
+function Controle() {
+  const { database } = useAmbiente();
+
+  const [erros, setErros] = useState<ErroConfirmacao[]>([]);
+  const [telefonesCancelados, setTelefonesCancelados] = useState<Record<string, TelefoneCancelado>>({});
+  const [isTeste, setIsTeste] = useState(false);
+  const [tabValue, setTabValue] = useState(0);
+  const [telefoneParaCancelar, setTelefoneParaCancelar] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // Carrega os erros de confirmação
+  useEffect(() => {
+    if (!database) return;
+    const errosRef = ref(database, '/OFT/45/confirmacaoPacientes/erro');
+
+    const unsubscribe = onValue(errosRef, (snapshot: DataSnapshot) => {
+      const dados = snapshot.val();
+      const errosArray: ErroConfirmacao[] = [];
+
+      if (dados) {
+        Object.entries(dados).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            const match = (value as string).match(
+              /NOME: ([^\n]+)\nMÉDICO: ([^\n]+)\nDATA\/HORA: ([^\n]+)\n\nTELEFONES CADASTRADOS: ([^\n]*)/
+            );
+
+            if (match) {
+              const [, nomePaciente, medico, dataHora, telefonesStr] = match;
+              const telefones = telefonesStr
+                .split('/')
+                .map((t: string) => t.trim())
+                .filter((t: string) => t);
+
+              errosArray.push({
+                id: key,
+                mensagem: value as string,
+                data: new Date(),
+                telefones,
+                nomePaciente,
+                medico,
+                dataHora,
+              });
+            }
+          }
+        });
+      }
+
+      setErros(errosArray);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Carrega os telefones cancelados
+  useEffect(() => {
+    if (!database) return;
+    const canceladosRef = ref(
+      database,
+      '/OFT/45/_dadosComuns/cancelados/1jApb1NOrMYoLce8MKxkUSLBpwEXbe1N1b33di08Ww40/Cancelados'
+    );
+
+    const unsubscribe = onValue(canceladosRef, (snapshot: DataSnapshot) => {
+      const dados = snapshot.val() as Record<string, TelefoneCancelado>;
+      setTelefonesCancelados(dados || {});
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Função para cancelar um telefone
+  const handleCancelarTelefone = (telefone: string) => {
+    if (!telefone || !database) return;
+
+    const telefoneFormatado = telefone.replace(/\D/g, '');
+
+    if (telefoneFormatado) {
+      const canceladosRef = ref(
+        database,
+        `/OFT/45/_dadosComuns/cancelados/1jApb1NOrMYoLce8MKxkUSLBpwEXbe1N1b33di08Ww40/Cancelados/${telefoneFormatado}`
+      );
+
+      set(canceladosRef, {
+        WhatsApp: telefoneFormatado,
+        Reenviar: '',
+      })
+        .then(() => {
+          alert(`Telefone ${telefoneFormatado} adicionado à lista de cancelados com sucesso!`);
+          setTelefoneParaCancelar('');
+        })
+        .catch((error) => {
+          console.error('Erro ao cancelar telefone:', error);
+          alert('Ocorreu um erro ao tentar cancelar o telefone.');
+        });
+    }
+  };
+
+  // Colunas para a tabela de erros
+  const colunasErros: GridColDef[] = [
+    { field: 'nomePaciente', headerName: 'Paciente', flex: 1 },
+    { field: 'medico', headerName: 'Médico', flex: 1 },
+    { field: 'dataHora', headerName: 'Data/Hora', flex: 1 },
+    {
+      field: 'telefones',
+      headerName: 'Telefones',
+      flex: 1.5,
+      renderCell: (params: GridRenderCellParams<any, string[] | undefined>) => (
+        <div>
+          {params.value?.map((tel: string, index: number) => (
+            <div key={index} style={{ margin: '4px 0' }}>
+              {tel}
+              <button
+                onClick={() => handleCancelarTelefone(tel)}
+                style={{
+                  marginLeft: '10px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '2px 8px',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                }}
+              >
+                Bloquear
+              </button>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+  ];
+
+  // Colunas para a tabela de telefones cancelados
+  const colunasCancelados: GridColDef[] = [
+    { field: 'telefone', headerName: 'Telefone', flex: 1 },
+    {
+      field: 'status',
+      headerName: 'Status',
+      flex: 1,
+      valueGetter: () => 'Bloqueado',
+    },
+  ];
+
+  return (
+    <>
+      <AppBar position="static" color="primary">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            OftalmoDay - Painel de Controle
+          </Typography>
+          <FormControlLabel
+            control={<Switch checked={isTeste} onChange={(e) => setIsTeste(e.target.checked)} color="secondary" />}
+            label={isTeste ? 'Modo Teste' : 'Modo Produção'}
+            labelPlacement="start"
+          />
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Tabs
+            value={tabValue}
+            onChange={(_, newValue) => setTabValue(newValue)}
+            indicatorColor="primary"
+            textColor="primary"
+            centered
+          >
+            <Tab label="Erros de Confirmação" />
+            <Tab label="Telefones Bloqueados" />
+          </Tabs>
+        </Paper>
+
+        {tabValue === 0 && (
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Erros de Confirmação
+            </Typography>
+            <div style={{ height: 500, width: '100%' }}>
+              <DataGrid
+                rows={erros}
+                columns={colunasErros}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 10, page: 0 } },
+                }}
+                pageSizeOptions={[10]}
+                loading={loading}
+                disableRowSelectionOnClick
+              />
+            </div>
+          </Paper>
+        )}
+
+        {tabValue === 1 && (
+          <Paper sx={{ p: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">Telefones Bloqueados</Typography>
+              <Box display="flex" alignItems="center">
+                <input
+                  type="text"
+                  value={telefoneParaCancelar}
+                  onChange={(e) => setTelefoneParaCancelar(e.target.value)}
+                  placeholder="Digite o telefone para bloquear"
+                  style={{
+                    padding: '8px',
+                    marginRight: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    width: '250px',
+                  }}
+                />
+                <button
+                  onClick={() => handleCancelarTelefone(telefoneParaCancelar)}
+                  style={{
+                    backgroundColor: '#f44336',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  Bloquear Telefone
+                </button>
+              </Box>
+            </Box>
+            <div style={{ height: 500, width: '100%' }}>
+              <DataGrid
+                rows={Object.entries(telefonesCancelados).map(([telefone, dados]) => ({
+                  id: telefone,
+                  telefone: dados.WhatsApp,
+                }))}
+                columns={colunasCancelados}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 10, page: 0 } },
+                }}
+                pageSizeOptions={[10]}
+                loading={loading}
+                disableRowSelectionOnClick
+              />
+            </div>
+          </Paper>
+        )}
+      </Container>
+    </>
+  );
+}
+
+export default Controle;

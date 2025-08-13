@@ -1,0 +1,180 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+firebase-debug.log*
+firebase-debug.*.log*
+
+# Firebase cache
+.firebase/
+.firebase/
+
+# Firebase config
+# Descomente se quiser que outros criem seu próprio projeto Firebase
+# Para uma equipe trabalhando nos mesmos projetos Firebase, é recomendado deixar
+# comentado para que todos os membros possam fazer deploy para os mesmos projetos no .firebaserc
+# .firebaserc
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Arquivos de configuração sensíveis
+src/firebase/config.ts
+src/firebase/config.js
+/functions/oftautomacao-9b427-firebase-adminsdk-zd3ss-*.json
+
+# Dependências
+/node_modules
+/.pnp
+.pnp.js
+
+# Build
+/build
+/dist
+
+# Cobertura de teste
+/coverage
+
+# Produção
+/build
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Depuração
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variáveis ​​de ambiente locais
+.env.local
+.env.develpment.local
+.env.test.local
+.env.production.local
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# dataconnect generated files
+.dataconnect
+
+# Vite cache
+.vite/
+.vite-*
+
+# Arquivos temporários
+*.tmp
+*.tmp.*
+.temp
+.temp.*
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Pasta de deploy temporário
+/temp_deploy/
+
+# Arquivos de log
+*.log
+
+# Arquivos de configuração local
+local.config.*
+
+# Arquivos de ambiente local
+.env.local
+
+# Arquivos de cache
+.cache/
+
+# Arquivos de desenvolvimento
+.vercel
+.netlify
+.next
+.nuxt
+.gatsby
+.cache/
+.temp/
+.tmp/
+.temp_*
+
+# Arquivos de IDE
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Arquivos do Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Arquivos do macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Arquivos do Linux
+*~
+.Trash-*
+.nfs*
+
+# Arquivos de desenvolvimento
+*.sublime-*
+*.code-workspace
+
+# Arquivos de ambiente Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de ambiente Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de ambiente React
+coverage/
+build/
+dist/
+
+# Arquivos de ambiente Vite
+.vite/
+.vite-*

@@ -1,0 +1,101 @@
+/* Estilos globais */
+body {
+  margin: 0;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f5f5;
+}
+
+/* Estilos para os botões */
+button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Estilos para os cards */
+.MuiPaper-root {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+/* Estilos para a tabela */
+.MuiDataGrid-root {
+  border: none !important;
+  font-size: 0.875rem;
+}
+
+.MuiDataGrid-columnHeaders {
+  background-color: #f5f5f5;
+  font-weight: 600;
+}
+
+.MuiDataGrid-row:hover {
+  background-color: rgba(25, 118, 210, 0.04) !important;
+}
+
+/* Estilos para os inputs */
+input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: border 0.3s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+/* Estilos para as abas */
+.MuiTabs-indicator {
+  height: 4px;
+}
+
+/* Estilos para mensagens de erro */
+.error-message {
+  color: #d32f2f;
+  background-color: #fde7e9;
+  padding: 12px;
+  border-radius: 4px;
+  margin: 10px 0;
+  border-left: 4px solid #d32f2f;
+}
+
+/* Estilos para mensagens de sucesso */
+.success-message {
+  color: #2e7d32;
+  background-color: #edf7ed;
+  padding: 12px;
+  border-radius: 4px;
+  margin: 10px 0;
+  border-left: 4px solid #2e7d32;
+}
+
+/* Estilos para o cabeçalho */
+.MuiAppBar-root {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para o container principal */
+.MuiContainer-root {
+  padding: 24px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .MuiContainer-root {
+    padding: 16px;
+  }
+  
+  .MuiDataGrid-root {
+    font-size: 0.8rem;
+  }
+}
