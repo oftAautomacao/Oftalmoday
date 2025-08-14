@@ -299,9 +299,10 @@ const ConfirmacaoPacientes: React.FC = () => {
       const whatsappCel = params.row.WhatsAppCel || '';
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
       
-      const numeroLimpo = whatsappCel.replace(/\D/g, '').replace(/^55/, '');
+      // Usa o número de teste quando estiver no ambiente de teste, senão usa o número do paciente
+      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
       const mensagem = formatarMensagemConfirmacao(params.row);
-      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroLimpo}&text=${mensagem}&type=phone_number&app_absent=0`;
+      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${mensagem}&type=phone_number&app_absent=0`;
       
       return (
         <Tooltip title="Clique para copiar o link" arrow>
