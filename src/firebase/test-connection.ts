@@ -4,8 +4,10 @@ import { getDatabase, ref, get } from 'firebase/database';
 // Configurações para os ambientes de teste e produção
 const firebaseConfigs = {
   teste: {
-    apiKey: "AIzaSyBTSTqEZARRrIOPwtTcysbw5RjjvXFuFDw",
-    databaseURL: "https://teste-b720c-default-rtdb.firebaseio.com"
+    // apiKey: "AIzaSyBTSTqEZARRrIOPwtTcysbw5RjjvXFuFDw",
+    // databaseURL: "https://teste-b720c-default-rtdb.firebaseio.com"
+    apiKey: "AIzaSyDseoXikJofokNkYoU-Sm6wf_N9EIZbmrs",
+    databaseURL: "https://oftautomacao-9b427-default-rtdb.firebaseio.com"
   },
   producao: {
     apiKey: "AIzaSyDseoXikJofokNkYoU-Sm6wf_N9EIZbmrs",

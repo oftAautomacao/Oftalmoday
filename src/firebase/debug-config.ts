@@ -4,13 +4,20 @@ import { getDatabase, ref, get } from 'firebase/database';
 // Configurações para os ambientes de teste e produção
 const firebaseConfigs = {
   teste: {
-    apiKey: "AIzaSyBTSTqEZARRrIOPwtTcysbw5RjjvXFuFDw",
-    authDomain: "teste-b720c.firebaseapp.com",
-    databaseURL: "https://teste-b720c-default-rtdb.firebaseio.com",
-    projectId: "teste-b720c",
-    storageBucket: "teste-b720c.appspot.com",
-    messagingSenderId: "1016885444024",
-    appId: "1:1016885444024:web:5f8e8f8e8f8e8f8e8f8e8"
+    // apiKey: "AIzaSyBTSTqEZARRrIOPwtTcysbw5RjjvXFuFDw",
+    // authDomain: "teste-b720c.firebaseapp.com",
+    // databaseURL: "https://teste-b720c-default-rtdb.firebaseio.com",
+    // projectId: "teste-b720c",
+    // storageBucket: "teste-b720c.appspot.com",
+    // messagingSenderId: "1016885444024",
+    // appId: "1:1016885444024:web:5f8e8f8e8f8e8f8e8f8e8"
+    apiKey: "AIzaSyDseoXikJofokNkYoU-Sm6wf_N9EIZbmrs",
+    authDomain: "oftautomacao-9b427.firebaseapp.com",
+    databaseURL: "https://oftautomacao-9b427-default-rtdb.firebaseio.com",
+    projectId: "oftautomacao-9b427",
+    storageBucket: "oftautomacao-9b427.appspot.com",
+    messagingSenderId: "755832525715",
+    appId: "1:755832525715:web:8f8e8f8e8f8e8f8e8f8e8"
   },
   producao: {
     apiKey: "AIzaSyDseoXikJofokNkYoU-Sm6wf_N9EIZbmrs",
