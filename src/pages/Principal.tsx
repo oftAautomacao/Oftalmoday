@@ -221,8 +221,16 @@ function Principal() {
     <>
       <AppHeader />
 
-      <Container maxWidth="xl" sx={{ mt: 4, backgroundColor: '#eaf2ff', borderRadius: 2, p: 2 }}>
-        <Paper sx={{ mb: 3 }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          mt: 4,
+          backgroundImage: 'linear-gradient(180deg, #e3edff 0%, #f5faff 100%)',
+          borderRadius: 2,
+          p: 2,
+        }}
+      >
+        <Paper sx={{ mb: 3, boxShadow: '0 4px 14px rgba(0,0,0,0.08)', borderRadius: 2 }}>
           <Tabs value={aba} onChange={(_, v: number) => setAba(v)} centered>
             <Tab label="Confirmação Pacientes" />
             <Tab label="Reconfirmação Pacientes" />
@@ -232,21 +240,21 @@ function Principal() {
 
         {/* Aba 0 – confirmação pacientes */}
         {aba === 0 && (
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
             <ConfirmacaoPacientes />
           </Paper>
         )}
 
         {/* Aba 1 – reconfirmação pacientes */}
         {aba === 1 && (
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
             <ReconfirmacaoPacientes />
           </Paper>
         )}
 
         {/* Aba 2 – bloqueados */}
         {aba === 2 && (
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
               <TextField
                 size="small"

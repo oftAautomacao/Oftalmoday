@@ -723,7 +723,42 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
 
   // Dados formatados para as tabelas (aplica filtros adicionais)
   const rowsPacientes = useMemo(() => {
-    const lista = pacientesFiltrados.filter(aplicaFiltros);
+    const parseDataParts = (dm?: string) => {
+      if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
+      const [dataStr, horaStr] = String(dm).split(' ');
+      if (!dataStr || dataStr === 'Não agendado' || dataStr === 'Sem Data') return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
+      const [diaS, mesS, anoS] = dataStr.split('/');
+      const d = Number(diaS), m = Number(mesS), y = Number(anoS);
+      let hh = 0, mm = 0;
+      if (horaStr) {
+        const [hhS, mmS] = horaStr.split(':');
+        hh = Number(hhS) || 0;
+        mm = Number(mmS) || 0;
+      }
+      if (!y || !m || !d) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
+      return { y, m, d, hh, mm, valid: true };
+    };
+
+    const lista = pacientesFiltrados
+      .filter(aplicaFiltros)
+      .slice()
+      .sort((a, b) => {
+        const A = parseDataParts(a.DataMarcada);
+        const B = parseDataParts(b.DataMarcada);
+        // Regra: datas válidas vêm antes das inválidas (inválidas no final)
+        if (A.valid && !B.valid) return -1;
+        if (!A.valid && B.valid) return 1;
+        if (!A.valid && !B.valid) return 0;
+        // 1) Data decrescente (mais recente primeiro): compara ano, depois mês, depois dia
+        if (A.y !== B.y) return B.y - A.y;
+        if (A.m !== B.m) return B.m - A.m;
+        if (A.d !== B.d) return B.d - A.d;
+        // 2) Mesma data: hora crescente (mais cedo primeiro)
+        if (A.hh !== B.hh) return A.hh - B.hh;
+        if (A.mm !== B.mm) return A.mm - B.mm;
+        return 0;
+      });
+
     return lista.map((paciente) => {
       console.log('Processando paciente:', paciente.id, 'WhatsAppCel:', paciente.WhatsAppCel);
       return {
