@@ -49,16 +49,23 @@ interface DadosFirebase {
   erro: Record<string, Omit<Paciente, 'id'>>;
 }
 
+interface ConfirmacaoPacientesProps {
+  selectedDate?: string; // Data no formato DD/MM/AAAA
+  controlledSubTab?: number; // 0: Pacientes, 1: Erros (quando controlado externamente)
+  onChangeSubTab?: (value: number) => void;
+  hideSubTabs?: boolean; // quando true, não renderiza as sub-abas internas
+}
 
-
-const ConfirmacaoPacientes: React.FC = () => {
+const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDate, controlledSubTab, onChangeSubTab, hideSubTabs }) => {
   const { database, ambiente } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [tabAtiva, setTabAtiva] = useState(0);
+  // Sub-abas Pacientes/Erros (nível 2)
+  const [subTabAtivaState, setSubTabAtivaState] = useState(0); // 0: Pacientes, 1: Erros
+  const subTabAtiva = (controlledSubTab ?? subTabAtivaState);
 
   // Prepara os dados para exibição
   const { pacientesFiltrados, errosFiltrados } = useMemo(() => {
@@ -118,6 +125,43 @@ const ConfirmacaoPacientes: React.FC = () => {
 
     return { pacientesFiltrados, errosFiltrados };
   }, [dados, search]);
+
+  // Agrupa por data (DD/MM/AAAA) para filtrar pelo dia selecionado
+  const { datasOrdenadas, mapaPacientesPorData, mapaErrosPorData } = useMemo(() => {
+    const extrairData = (dataMarcada?: string) => {
+      if (!dataMarcada) return 'Sem Data';
+      const [data] = String(dataMarcada).split(' ');
+      return data || 'Sem Data';
+    };
+    const mapPac: Record<string, typeof pacientesFiltrados> = {};
+    const mapErr: Record<string, typeof errosFiltrados> = {};
+    const setDatas = new Set<string>();
+
+    for (const p of pacientesFiltrados) {
+      const d = extrairData(p.DataMarcada);
+      if (!mapPac[d]) mapPac[d] = [];
+      mapPac[d].push(p);
+      setDatas.add(d);
+    }
+    for (const e of errosFiltrados) {
+      const d = extrairData(e.DataMarcada);
+      if (!mapErr[d]) mapErr[d] = [];
+      mapErr[d].push(e);
+      setDatas.add(d);
+    }
+
+    const parsePtBrDate = (d: string) => {
+      if (d === 'Sem Data') return new Date(0);
+      const [dia, mes, ano] = d.split('/').map(Number);
+      return new Date(ano, (mes || 1) - 1, dia || 1);
+    };
+
+    const ordenadas = Array.from(setDatas).sort((a, b) => parsePtBrDate(a).getTime() - parsePtBrDate(b).getTime());
+    return { datasOrdenadas: ordenadas, mapaPacientesPorData: mapPac, mapaErrosPorData: mapErr };
+  }, [pacientesFiltrados, errosFiltrados]);
+
+  // Data ativa vem da prop (ou usa a primeira data disponível)
+  const dataAtiva = selectedDate ?? (datasOrdenadas[0] || 'Sem Data');
 
   // Carrega os dados do Firebase
   const carregarDados = useCallback((): (() => void) | undefined => {
@@ -562,8 +606,8 @@ const ConfirmacaoPacientes: React.FC = () => {
       flex: 1, 
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => {
-        // Para a aba de Pacientes, mostra APENAS o WhatsAppCel
-        if (tabAtiva === 0) {
+        // Para a sub-aba de Pacientes, mostra APENAS o WhatsAppCel
+        if (subTabAtiva === 0) {
           console.log('Dados da linha:', params.row);
           let whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
           console.log('WhatsAppCel encontrado:', whatsappCel);
@@ -610,7 +654,7 @@ const ConfirmacaoPacientes: React.FC = () => {
           );
         }
         
-        // Para outras abas, mantém o comportamento original (mostra todos os telefones)
+        // Para a sub-aba de Erros, mantém o comportamento original (mostra todos os telefones)
         const telefones = [
           params.row.Telefone,
           params.row.TelefoneCel,
@@ -671,8 +715,8 @@ const ConfirmacaoPacientes: React.FC = () => {
 
   // Dados formatados para as tabelas
   const rowsPacientes = useMemo(() => {
-    console.log('Pacientes filtrados:', pacientesFiltrados);
-    return pacientesFiltrados.map((paciente) => {
+    const lista = mapaPacientesPorData[dataAtiva] || [];
+    return lista.map((paciente) => {
       console.log('Processando paciente:', paciente.id, 'WhatsAppCel:', paciente.WhatsAppCel);
       return {
         id: paciente.id,
@@ -691,11 +735,11 @@ const ConfirmacaoPacientes: React.FC = () => {
         tipo: 'paciente' as const
       };
     });
-  }, [pacientesFiltrados]);
+  }, [mapaPacientesPorData, dataAtiva]);
 
   const rowsErros = useMemo(() => {
-    console.log('Criando linhas de erro:', errosFiltrados);
-    return errosFiltrados.map((erro) => ({
+    const lista = mapaErrosPorData[dataAtiva] || [];
+    return lista.map((erro) => ({
       id: erro.id,
       Paciente: erro.Paciente || 'Não informado',
       DataMarcada: erro.DataMarcada || 'Não agendado',
@@ -706,10 +750,11 @@ const ConfirmacaoPacientes: React.FC = () => {
       status: 'erro', // Status fixo como 'erro' para destacar na tabela
       mensagem: erro.mensagem || 'Erro na confirmação'
     }));
-  }, [errosFiltrados]);
-
-  const handleChangeTab = (_: React.SyntheticEvent, newValue: number) => {
-    setTabAtiva(newValue);
+  }, [mapaErrosPorData, dataAtiva]);
+  
+  const handleChangeSubTab = (_: React.SyntheticEvent, newValue: number) => {
+    if (onChangeSubTab) onChangeSubTab(newValue);
+    else setSubTabAtivaState(newValue);
   };
 
   return (
@@ -721,7 +766,7 @@ const ConfirmacaoPacientes: React.FC = () => {
               fullWidth
               variant="outlined"
               size="small"
-              placeholder={tabAtiva === 0 ? "Buscar paciente..." : "Buscar erros..."}
+              placeholder={subTabAtiva === 0 ? "Buscar paciente..." : "Buscar erros..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{
@@ -781,62 +826,47 @@ const ConfirmacaoPacientes: React.FC = () => {
           minWidth: '100% !important', // Força a largura mínima das linhas
         }
       }}>
-        <Tabs 
-          value={tabAtiva} 
-          onChange={handleChangeTab} 
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tab 
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>Pacientes</span>
-                {pacientesFiltrados.length > 0 && (
-                  <Box sx={{ 
-                    bgcolor: 'primary.main', 
-                    color: 'white', 
-                    borderRadius: '50%', 
-                    width: 20, 
-                    height: 20, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    fontSize: '0.75rem'
-                  }}>
-                    {pacientesFiltrados.length}
+        {/* Sub-abas Pacientes/Erros da data ativa (ocultáveis) */}
+        {!hideSubTabs && (
+          <Box sx={{ px: 2, pt: 2 }}>
+            <Tabs value={subTabAtiva} onChange={handleChangeSubTab} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tab 
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>Pacientes</span>
+                    {(mapaPacientesPorData[dataAtiva]?.length || 0) > 0 && (
+                      <Box sx={{ 
+                        bgcolor: 'primary.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem'
+                      }}>
+                        {mapaPacientesPorData[dataAtiva]?.length || 0}
+                      </Box>
+                    )}
                   </Box>
-                )}
-              </Box>
-            } 
-          />
-          <Tab 
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>Erros</span>
-                {errosFiltrados.length > 0 && (
-                  <Box sx={{ 
-                    bgcolor: 'error.main', 
-                    color: 'white', 
-                    borderRadius: '50%', 
-                    width: 20, 
-                    height: 20, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    fontSize: '0.75rem'
-                  }}>
-                    {errosFiltrados.length}
+                }
+              />
+              <Tab 
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>Erros</span>
+                    {(mapaErrosPorData[dataAtiva]?.length || 0) > 0 && (
+                      <Box sx={{ 
+                        bgcolor: 'error.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem'
+                      }}>
+                        {mapaErrosPorData[dataAtiva]?.length || 0}
+                      </Box>
+                    )}
                   </Box>
-                )}
-              </Box>
-            } 
-          />
-        </Tabs>
+                }
+              />
+            </Tabs>
+          </Box>
+        )}
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
             <CircularProgress />
           </Box>
-        ) : tabAtiva === 0 ? (
+        ) : subTabAtiva === 0 ? (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <DataGrid
               rows={rowsPacientes}
