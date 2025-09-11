@@ -34,52 +34,6 @@ function Principal() {
   const { database } = useAmbiente();
   const [aba, setAba] = useState(0);
 
-  // --- datas confirmação pacientes ---
-  const [datasConfirmacao, setDatasConfirmacao] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
-
-  useEffect(() => {
-    if (!database) return;
-    const path = '/OFT/45/confirmacaoPacientes';
-    const unsub = onValue(ref(database, path), (snapshot) => {
-      const data = snapshot.val() as {
-        aEnviar?: Record<string, any>;
-        erro?: Record<string, any>;
-      } | null;
-      const extractDate = (d?: string) => {
-        if (!d) return 'Sem Data';
-        const [dataStr] = String(d).split(' ');
-        return dataStr || 'Sem Data';
-      };
-      const setDatas = new Set<string>();
-      if (data?.aEnviar) {
-        for (const item of Object.values(data.aEnviar)) {
-          setDatas.add(extractDate((item as any)?.DataMarcada));
-        }
-      }
-      if (data?.erro) {
-        for (const item of Object.values(data.erro)) {
-          setDatas.add(extractDate((item as any)?.DataMarcada));
-        }
-      }
-      const parsePtBrDate = (d: string) => {
-        if (d === 'Sem Data') return new Date(0);
-        const [dia, mes, ano] = d.split('/').map(Number);
-        return new Date(ano, (mes || 1) - 1, dia || 1);
-      };
-      const ordenadas = Array.from(setDatas).sort((a, b) => parsePtBrDate(a).getTime() - parsePtBrDate(b).getTime());
-      setDatasConfirmacao(ordenadas);
-      // Seleciona a primeira data se nenhuma selecionada ou se a atual não existir mais
-      if (ordenadas.length > 0) {
-        if (!selectedDate || !ordenadas.includes(selectedDate)) {
-          setSelectedDate(ordenadas[0]);
-        }
-      } else {
-        setSelectedDate(undefined);
-      }
-    });
-    return () => unsub();
-  }, [database, selectedDate]);
 
   // --- dados bloqueados ---
   const [telefonesCancelados, setTelefonesCancelados] = useState<Record<string, TelefoneCancelado>>({});
@@ -267,7 +221,7 @@ function Principal() {
     <>
       <AppHeader />
 
-      <Container maxWidth="xl" sx={{ mt: 4 }}>
+      <Container maxWidth="xl" sx={{ mt: 4, backgroundColor: '#eaf2ff', borderRadius: 2, p: 2 }}>
         <Paper sx={{ mb: 3 }}>
           <Tabs value={aba} onChange={(_, v: number) => setAba(v)} centered>
             <Tab label="Confirmação Pacientes" />
@@ -279,24 +233,7 @@ function Principal() {
         {/* Aba 0 – confirmação pacientes */}
         {aba === 0 && (
           <Paper sx={{ p: 2 }}>
-            {/* Abas de datas da Confirmação Pacientes */}
-            <Box sx={{ mb: 1 }}>
-              <Tabs
-                value={Math.max(0, datasConfirmacao.findIndex((d) => d === selectedDate))}
-                onChange={(_, idx: number) => {
-                  const nova = datasConfirmacao[idx];
-                  setSelectedDate(nova);
-                }}
-                variant="scrollable"
-                scrollButtons
-                allowScrollButtonsMobile
-              >
-                {datasConfirmacao.map((data) => (
-                  <Tab key={data} label={data} />
-                ))}
-              </Tabs>
-            </Box>
-            <ConfirmacaoPacientes selectedDate={selectedDate} />
+            <ConfirmacaoPacientes />
           </Paper>
         )}
 

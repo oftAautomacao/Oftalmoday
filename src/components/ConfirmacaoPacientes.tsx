@@ -8,13 +8,15 @@ import {
   TextField, 
   IconButton, 
   Tooltip, 
-  CircularProgress, 
   Stack,
-  Tabs,
-  Tab,
   Snackbar,
   Alert as MuiAlert,
-  AlertProps as MuiAlertProps
+  AlertProps as MuiAlertProps,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
 } from '@mui/material';
 
 // Componente Alert personalizado para o Snackbar
@@ -49,23 +51,21 @@ interface DadosFirebase {
   erro: Record<string, Omit<Paciente, 'id'>>;
 }
 
-interface ConfirmacaoPacientesProps {
-  selectedDate?: string; // Data no formato DD/MM/AAAA
-  controlledSubTab?: number; // 0: Pacientes, 1: Erros (quando controlado externamente)
-  onChangeSubTab?: (value: number) => void;
-  hideSubTabs?: boolean; // quando true, não renderiza as sub-abas internas
-}
+interface ConfirmacaoPacientesProps {}
 
-const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDate, controlledSubTab, onChangeSubTab, hideSubTabs }) => {
+const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
   const { database, ambiente } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
+  // Filtros
+  const [filtroDataExistente, setFiltroDataExistente] = useState<string>(''); // '' = todas
+  const [filtroMedico, setFiltroMedico] = useState<string>(''); // '' = todos
+  const [filtroConvenio, setFiltroConvenio] = useState<string>(''); // '' = todos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   // Sub-abas Pacientes/Erros (nível 2)
-  const [subTabAtivaState, setSubTabAtivaState] = useState(0); // 0: Pacientes, 1: Erros
-  const subTabAtiva = (controlledSubTab ?? subTabAtivaState);
+  const [subTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
 
   // Prepara os dados para exibição
   const { pacientesFiltrados, errosFiltrados } = useMemo(() => {
@@ -126,29 +126,22 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDat
     return { pacientesFiltrados, errosFiltrados };
   }, [dados, search]);
 
-  // Agrupa por data (DD/MM/AAAA) para filtrar pelo dia selecionado
-  const { datasOrdenadas, mapaPacientesPorData, mapaErrosPorData } = useMemo(() => {
+  // Extrai datas únicas (DD/MM/AAAA), médicos e convênios únicos
+  const { datasOrdenadas, medicosUnicos, conveniosUnicos } = useMemo(() => {
     const extrairData = (dataMarcada?: string) => {
       if (!dataMarcada) return 'Sem Data';
       const [data] = String(dataMarcada).split(' ');
       return data || 'Sem Data';
     };
-    const mapPac: Record<string, typeof pacientesFiltrados> = {};
-    const mapErr: Record<string, typeof errosFiltrados> = {};
     const setDatas = new Set<string>();
+    const setMedicos = new Set<string>();
+    const setConvenios = new Set<string>();
 
-    for (const p of pacientesFiltrados) {
-      const d = extrairData(p.DataMarcada);
-      if (!mapPac[d]) mapPac[d] = [];
-      mapPac[d].push(p);
-      setDatas.add(d);
-    }
-    for (const e of errosFiltrados) {
-      const d = extrairData(e.DataMarcada);
-      if (!mapErr[d]) mapErr[d] = [];
-      mapErr[d].push(e);
-      setDatas.add(d);
-    }
+    [...pacientesFiltrados, ...errosFiltrados].forEach((item: any) => {
+      setDatas.add(extrairData(item.DataMarcada));
+      if (item.Medico) setMedicos.add(String(item.Medico));
+      if (item.Convenio) setConvenios.add(String(item.Convenio));
+    });
 
     const parsePtBrDate = (d: string) => {
       if (d === 'Sem Data') return new Date(0);
@@ -157,11 +150,10 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDat
     };
 
     const ordenadas = Array.from(setDatas).sort((a, b) => parsePtBrDate(a).getTime() - parsePtBrDate(b).getTime());
-    return { datasOrdenadas: ordenadas, mapaPacientesPorData: mapPac, mapaErrosPorData: mapErr };
+    const medicos = Array.from(setMedicos).sort((a, b) => a.localeCompare(b));
+    const convenios = Array.from(setConvenios).sort((a, b) => a.localeCompare(b));
+    return { datasOrdenadas: ordenadas, medicosUnicos: medicos, conveniosUnicos: convenios };
   }, [pacientesFiltrados, errosFiltrados]);
-
-  // Data ativa vem da prop (ou usa a primeira data disponível)
-  const dataAtiva = selectedDate ?? (datasOrdenadas[0] || 'Sem Data');
 
   // Carrega os dados do Firebase
   const carregarDados = useCallback((): (() => void) | undefined => {
@@ -713,9 +705,25 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDat
   // Colunas para a aba de erros (inclui a numeração)
   const columnsErros = [numeroSequencialColumn, ...commonColumns];
 
-  // Dados formatados para as tabelas
+  // Predicados de filtro
+  const extrairApenasData = (dm?: string) => (dm ? String(dm).split(' ')[0] : 'Sem Data');
+
+  const aplicaFiltros = (item: any) => {
+    // filtro por data existente (select)
+    if (filtroDataExistente) {
+      const d = extrairApenasData(item.DataMarcada);
+      if (d !== filtroDataExistente) return false;
+    }
+    // filtro médico
+    if (filtroMedico && String(item.Medico || '').trim() !== filtroMedico) return false;
+    // filtro convênio
+    if (filtroConvenio && String(item.Convenio || '').trim() !== filtroConvenio) return false;
+    return true;
+  };
+
+  // Dados formatados para as tabelas (aplica filtros adicionais)
   const rowsPacientes = useMemo(() => {
-    const lista = mapaPacientesPorData[dataAtiva] || [];
+    const lista = pacientesFiltrados.filter(aplicaFiltros);
     return lista.map((paciente) => {
       console.log('Processando paciente:', paciente.id, 'WhatsAppCel:', paciente.WhatsAppCel);
       return {
@@ -735,10 +743,10 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDat
         tipo: 'paciente' as const
       };
     });
-  }, [mapaPacientesPorData, dataAtiva]);
+  }, [pacientesFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
 
   const rowsErros = useMemo(() => {
-    const lista = mapaErrosPorData[dataAtiva] || [];
+    const lista = errosFiltrados.filter(aplicaFiltros);
     return lista.map((erro) => ({
       id: erro.id,
       Paciente: erro.Paciente || 'Não informado',
@@ -750,50 +758,89 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDat
       status: 'erro', // Status fixo como 'erro' para destacar na tabela
       mensagem: erro.mensagem || 'Erro na confirmação'
     }));
-  }, [mapaErrosPorData, dataAtiva]);
+  }, [errosFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
   
-  const handleChangeSubTab = (_: React.SyntheticEvent, newValue: number) => {
-    if (onChangeSubTab) onChangeSubTab(newValue);
-    else setSubTabAtivaState(newValue);
-  };
+  // Alternância de sub-aba poderá ser ativada via toggle futuramente
 
   return (
-    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Box sx={{ flex: 1 }}>
+    <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+          <Box sx={{ flex: 1, minWidth: 320 }}>
             <TextField
               fullWidth
               variant="outlined"
               size="small"
-              placeholder={subTabAtiva === 0 ? "Buscar paciente..." : "Buscar erros..."}
+              placeholder={subTabAtiva === 0 ? "Buscar por nome/telefone..." : "Buscar por nome/telefone..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
+              InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
+              label="Texto"
             />
           </Box>
-          <Box>
-            <Tooltip title="Atualizar dados">
-              <span>
-                <IconButton 
-                  onClick={carregarDados} 
-                  disabled={loading}
-                  sx={{ 
-                    height: '40px',
-                    width: '40px',
-                    backgroundColor: 'action.hover',
-                    '&:hover': {
-                      backgroundColor: 'action.selected'
-                    }
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Box>
+
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Datas existentes</InputLabel>
+            <Select
+              label="Datas existentes"
+              value={filtroDataExistente}
+              onChange={(e) => setFiltroDataExistente(e.target.value)}
+              displayEmpty
+            >
+              <MenuItem value=""><em></em></MenuItem>
+              {datasOrdenadas.map((d) => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Intervalo de datas removido conforme solicitação */}
+
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Médico</InputLabel>
+            <Select
+              label="Médico"
+              value={filtroMedico}
+              onChange={(e) => setFiltroMedico(e.target.value)}
+              displayEmpty
+            >
+              <MenuItem value=""><em></em></MenuItem>
+              {medicosUnicos.map((m) => (
+                <MenuItem key={m} value={m}>{m}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Convênio</InputLabel>
+            <Select
+              label="Convênio"
+              value={filtroConvenio}
+              onChange={(e) => setFiltroConvenio(e.target.value)}
+              displayEmpty
+            >
+              <MenuItem value=""><em></em></MenuItem>
+              {conveniosUnicos.map((c) => (
+                <MenuItem key={c} value={c}>{c}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Box sx={{ flexGrow: 1 }} />
+          <Tooltip title="Atualizar dados">
+            <span>
+              <IconButton onClick={carregarDados} disabled={loading} color="primary" size="small" sx={{ p: 0.75 }}>
+                <RefreshIcon color="inherit" fontSize="medium" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Button variant="outlined" size="small" onClick={() => {
+            setSearch('');
+            setFiltroDataExistente('');
+            // filtros de intervalo removidos
+            setFiltroMedico('');
+            setFiltroConvenio('');
+          }}>Limpar</Button>
         </Stack>
       </Paper>
 
@@ -826,47 +873,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({ selectedDat
           minWidth: '100% !important', // Força a largura mínima das linhas
         }
       }}>
-        {/* Sub-abas Pacientes/Erros da data ativa (ocultáveis) */}
-        {!hideSubTabs && (
-          <Box sx={{ px: 2, pt: 2 }}>
-            <Tabs value={subTabAtiva} onChange={handleChangeSubTab} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tab 
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>Pacientes</span>
-                    {(mapaPacientesPorData[dataAtiva]?.length || 0) > 0 && (
-                      <Box sx={{ 
-                        bgcolor: 'primary.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem'
-                      }}>
-                        {mapaPacientesPorData[dataAtiva]?.length || 0}
-                      </Box>
-                    )}
-                  </Box>
-                }
-              />
-              <Tab 
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>Erros</span>
-                    {(mapaErrosPorData[dataAtiva]?.length || 0) > 0 && (
-                      <Box sx={{ 
-                        bgcolor: 'error.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem'
-                      }}>
-                        {mapaErrosPorData[dataAtiva]?.length || 0}
-                      </Box>
-                    )}
-                  </Box>
-                }
-              />
-            </Tabs>
-          </Box>
-        )}
-
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-            <CircularProgress />
-          </Box>
-        ) : subTabAtiva === 0 ? (
+        {subTabAtiva === 0 ? (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <DataGrid
               rows={rowsPacientes}
