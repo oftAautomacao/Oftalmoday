@@ -61,8 +61,8 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
   const [search, setSearch] = useState('');
   // Filtros
   const [filtroDataExistente, setFiltroDataExistente] = useState<string[]>([]); // [] = todas
-  const [filtroMedico, setFiltroMedico] = useState<string>(''); // '' = todos
-  const [filtroConvenio, setFiltroConvenio] = useState<string>(''); // '' = todos
+  const [filtroMedico, setFiltroMedico] = useState<string[]>([]); // [] = todos
+  const [filtroConvenio, setFiltroConvenio] = useState<string[]>([]); // [] = todos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -716,10 +716,16 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
       const d = extrairApenasData(item.DataMarcada);
       if (!filtroDataExistente.includes(d)) return false;
     }
-    // filtro médico
-    if (filtroMedico && String(item.Medico || '').trim() !== filtroMedico) return false;
-    // filtro convênio
-    if (filtroConvenio && String(item.Convenio || '').trim() !== filtroConvenio) return false;
+    // filtro médico (múltiplo)
+    if (filtroMedico.length > 0) {
+      const med = String(item.Medico || '').trim();
+      if (!filtroMedico.includes(med)) return false;
+    }
+    // filtro convênio (múltiplo)
+    if (filtroConvenio.length > 0) {
+      const conv = String(item.Convenio || '').trim();
+      if (!filtroConvenio.includes(conv)) return false;
+    }
     return true;
   };
 
@@ -848,32 +854,50 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
 
           {/* Intervalo de datas removido conforme solicitação */}
 
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Médico</InputLabel>
             <Select
               label="Médico"
+              multiple
               value={filtroMedico}
-              onChange={(e) => setFiltroMedico(e.target.value)}
-              displayEmpty
+              onChange={(e) => setFiltroMedico(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
+              renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
             >
-              <MenuItem value=""><em></em></MenuItem>
               {medicosUnicos.map((m) => (
-                <MenuItem key={m} value={m}>{m}</MenuItem>
+                <MenuItem
+                  key={m}
+                  value={m}
+                  sx={{
+                    '&.Mui-selected': { backgroundColor: '#bcd2ff' },
+                    '&.Mui-selected:hover': { backgroundColor: '#a9c4ff' },
+                  }}
+                >
+                  {m}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Convênio</InputLabel>
             <Select
               label="Convênio"
+              multiple
               value={filtroConvenio}
-              onChange={(e) => setFiltroConvenio(e.target.value)}
-              displayEmpty
+              onChange={(e) => setFiltroConvenio(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
+              renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
             >
-              <MenuItem value=""><em></em></MenuItem>
               {conveniosUnicos.map((c) => (
-                <MenuItem key={c} value={c}>{c}</MenuItem>
+                <MenuItem
+                  key={c}
+                  value={c}
+                  sx={{
+                    '&.Mui-selected': { backgroundColor: '#bcd2ff' },
+                    '&.Mui-selected:hover': { backgroundColor: '#a9c4ff' },
+                  }}
+                >
+                  {c}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -890,8 +914,8 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
             setSearch('');
             setFiltroDataExistente([]);
             // filtros de intervalo removidos
-            setFiltroMedico('');
-            setFiltroConvenio('');
+            setFiltroMedico([]);
+            setFiltroConvenio([]);
           }}>Limpar</Button>
         </Stack>
       </Paper>
