@@ -17,6 +17,8 @@ import {
   Select,
   MenuItem,
   Button,
+  Tabs,
+  Tab,
 } from '@mui/material';
 
 // Componente Alert personalizado para o Snackbar
@@ -58,14 +60,14 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
   // Filtros
-  const [filtroDataExistente, setFiltroDataExistente] = useState<string>(''); // '' = todas
+  const [filtroDataExistente, setFiltroDataExistente] = useState<string[]>([]); // [] = todas
   const [filtroMedico, setFiltroMedico] = useState<string>(''); // '' = todos
   const [filtroConvenio, setFiltroConvenio] = useState<string>(''); // '' = todos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   // Sub-abas Pacientes/Erros (nível 2)
-  const [subTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
+  const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
 
   // Prepara os dados para exibição
   const { pacientesFiltrados, errosFiltrados } = useMemo(() => {
@@ -710,9 +712,9 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
 
   const aplicaFiltros = (item: any) => {
     // filtro por data existente (select)
-    if (filtroDataExistente) {
+    if (filtroDataExistente.length > 0) {
       const d = extrairApenasData(item.DataMarcada);
-      if (d !== filtroDataExistente) return false;
+      if (!filtroDataExistente.includes(d)) return false;
     }
     // filtro médico
     if (filtroMedico && String(item.Medico || '').trim() !== filtroMedico) return false;
@@ -749,10 +751,10 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
         if (A.valid && !B.valid) return -1;
         if (!A.valid && B.valid) return 1;
         if (!A.valid && !B.valid) return 0;
-        // 1) Data decrescente (mais recente primeiro): compara ano, depois mês, depois dia
-        if (A.y !== B.y) return B.y - A.y;
-        if (A.m !== B.m) return B.m - A.m;
-        if (A.d !== B.d) return B.d - A.d;
+        // 1) Data crescente (mais antigas primeiro): compara ano, depois mês, depois dia
+        if (A.y !== B.y) return A.y - B.y;
+        if (A.m !== B.m) return A.m - B.m;
+        if (A.d !== B.d) return A.d - B.d;
         // 2) Mesma data: hora crescente (mais cedo primeiro)
         if (A.hh !== B.hh) return A.hh - B.hh;
         if (A.mm !== B.mm) return A.mm - B.mm;
@@ -814,17 +816,32 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
             />
           </Box>
 
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          {/* As abas clássicas serão exibidas abaixo, dentro do Paper principal */}
+
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Datas existentes</InputLabel>
             <Select
               label="Datas existentes"
+              multiple
               value={filtroDataExistente}
-              onChange={(e) => setFiltroDataExistente(e.target.value)}
-              displayEmpty
+              onChange={(e) => setFiltroDataExistente(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
+              renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
             >
-              <MenuItem value=""><em></em></MenuItem>
               {datasOrdenadas.map((d) => (
-                <MenuItem key={d} value={d}>{d}</MenuItem>
+                <MenuItem
+                  key={d}
+                  value={d}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: '#bcd2ff', // azul um pouco mais escuro
+                    },
+                    '&.Mui-selected:hover': {
+                      backgroundColor: '#a9c4ff',
+                    },
+                  }}
+                >
+                  {d}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -871,7 +888,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
           </Tooltip>
           <Button variant="outlined" size="small" onClick={() => {
             setSearch('');
-            setFiltroDataExistente('');
+            setFiltroDataExistente([]);
             // filtros de intervalo removidos
             setFiltroMedico('');
             setFiltroConvenio('');
@@ -908,6 +925,35 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
           minWidth: '100% !important', // Força a largura mínima das linhas
         }
       }}>
+        {/* Abas Pacientes/Erros */}
+        <Box sx={{ px: 2, pt: 1 }}>
+          <Tabs value={subTabAtiva} onChange={(_, v: number) => setSubTabAtiva(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tab 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Pacientes</span>
+                  {rowsPacientes.length > 0 && (
+                    <Box sx={{ bgcolor: 'primary.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                      {rowsPacientes.length}
+                    </Box>
+                  )}
+                </Box>
+              }
+            />
+            <Tab 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Erros</span>
+                  {rowsErros.length > 0 && (
+                    <Box sx={{ bgcolor: 'error.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                      {rowsErros.length}
+                    </Box>
+                  )}
+                </Box>
+              }
+            />
+          </Tabs>
+        </Box>
         {subTabAtiva === 0 ? (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <DataGrid
