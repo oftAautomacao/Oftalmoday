@@ -265,7 +265,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     // Extrai data e hora da string DataMarcada
     const dataMarcada = paciente.DataMarcada.split(' ');
     const data = dataMarcada[0];
-    const hora = dataMarcada[2]; // Pega a hora diretamente do terceiro elemento
+    const hora = dataMarcada[1]; // Pega a hora diretamente do segundo elemento
 
     // Texto principal da mensagem
     let mensagem = "*Olá, bom dia!* \n*Somos da clínica Oftalmo Day!*";
@@ -287,8 +287,8 @@ const ReconfirmacaoPacientes: React.FC = () => {
     //            "solicitamos que o pedido seja feito no dia da consulta, diretamente na recepção da clínica. " +
     //            "Se a solicitação for feita posteriormente, o prazo para entrega será de até 24 horas.";
 
-    mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção." +
-    "\nPedidos posteriores: prazo até 48h e retirada apenas na recepção";
+    mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção. " +
+    "Pedidos posteriores: prazo até 48h e retirada apenas na recepção";
 
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
