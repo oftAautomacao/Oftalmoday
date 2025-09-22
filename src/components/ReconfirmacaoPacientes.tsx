@@ -283,9 +283,12 @@ const ReconfirmacaoPacientes: React.FC = () => {
     }
 
     // Adiciona o complemento da mensagem
-    mensagem += "\n\n📍 Caso necessite de declaração de comparecimento ou emissão de Nota Carioca, " +
-               "solicitamos que o pedido seja feito no dia da consulta, diretamente na recepção da clínica. " +
-               "Se a solicitação for feita posteriormente, o prazo para entrega será de até 24 horas.";
+    // mensagem += "\n\n📍 Caso necessite de declaração de comparecimento ou emissão de Nota Carioca, " +
+    //            "solicitamos que o pedido seja feito no dia da consulta, diretamente na recepção da clínica. " +
+    //            "Se a solicitação for feita posteriormente, o prazo para entrega será de até 24 horas.";
+
+    mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção." +
+    "\nPedidos posteriores: prazo até 48h e retirada apenas na recepção";
 
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
