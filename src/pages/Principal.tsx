@@ -19,6 +19,7 @@ import {
 import { useAmbiente } from '../contexts/AmbienteContext';
 import ConfirmacaoPacientes from '../components/ConfirmacaoPacientes';
 import ReconfirmacaoPacientes from '../components/ReconfirmacaoPacientes';
+import PacientesFaltosos from '../components/PacientesFaltosos';
 import AppHeader from '../components/AppHeader';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -234,6 +235,7 @@ function Principal() {
           <Tabs value={aba} onChange={(_, v: number) => setAba(v)} centered>
             <Tab label="Confirmação Pacientes" />
             <Tab label="Reconfirmação Pacientes" />
+            <Tab label="Pacientes Faltosos" />
             <Tab label="Pacientes Bloqueados" />
           </Tabs>
         </Paper>
@@ -252,8 +254,15 @@ function Principal() {
           </Paper>
         )}
 
-        {/* Aba 2 – bloqueados */}
+        {/* Aba 2 – Pacientes Faltosos */}
         {aba === 2 && (
+          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
+            <PacientesFaltosos />
+          </Paper>
+        )}
+
+        {/* Aba 3 – bloqueados */}
+        {aba === 3 && (
           <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
               <TextField
