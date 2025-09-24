@@ -64,7 +64,7 @@ interface SnackbarState {
 }
 
 const PacientesFaltosos: React.FC = () => {
-  const { database } = useAmbiente();
+  const { database, ambiente } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
   // Filtros
@@ -213,7 +213,7 @@ const PacientesFaltosos: React.FC = () => {
 
       // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
       Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
-        if ((paciente as any).Copiado === true) {
+        if ((paciente as any).Copiado === true || (paciente as any).Medico === "Campo Visual") {
           novosSelecionados[id] = true;
         }
       });
@@ -265,15 +265,13 @@ const PacientesFaltosos: React.FC = () => {
     // Extrai data e hora da string DataMarcada
     const dataMarcada = paciente.DataMarcada.split(' ');
     const data = dataMarcada[0];
-    const hora = dataMarcada[1]; // Pega a hora diretamente do segundo elemento
+    const hora = dataMarcada[2]; // Pega a hora diretamente do segundo elemento
 
     // Texto principal da mensagem
-    let mensagem = `*Olá, bom dia!* 
-*Somos da clínica Oftalmo Day!*
+     let mensagem = `Olá! Aqui é da Oftalmo Day.`
 
-Escrevemos para informar sobre a ausência do paciente ${paciente.Paciente} à consulta agendada para o dia ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}.`;
-
-    mensagem += "\nGostaríamos de saber se houve algum imprevisto e se você deseja remarcar a consulta. Estamos à disposição para encontrar um novo horário que seja conveniente.";
+      mensagem +=`\nNa data ${data} às ${hora}, o(a) paciente ${paciente.Paciente} tinha uma consulta agendada com o(a) Dr(a) ${paciente.Medico}. Vimos que não pôde comparecer.
+      \nGostaria de estar agendando uma nova consulta? 😊`;
 
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
@@ -377,7 +375,7 @@ Escrevemos para informar sobre a ausência do paciente ${paciente.Paciente} à c
             <Box
               component="input"
               type="checkbox"
-              checked={!!selectedRows[rowId]}
+              checked={!!selectedRows[rowId] || params.row.Medico === "Campo Visual"}
               onChange={() => toggleRowSelection(rowId)}
               onClick={(e) => e.stopPropagation()}
               sx={{
@@ -436,12 +434,15 @@ Escrevemos para informar sobre a ausência do paciente ${paciente.Paciente} à c
     sortable: false,
     filterable: false,
     renderCell: (params: GridRenderCellParams) => {
+      if (params.row.Medico === "Campo Visual") {
+        return '';
+      }
       const whatsappCel = params.row.WhatsAppCel || '';
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
 
-      const numeroLimpo = whatsappCel.replace(/\D/g, '').replace(/^55/, '');
+      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
       const mensagem = formatarMensagem(params.row);
-      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroLimpo}&text=${mensagem}&type=phone_number&app_absent=0`;
+      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${mensagem}&type=phone_number&app_absent=0`;
 
       return (
         <Tooltip title="Clique para copiar o link" arrow>
@@ -747,8 +748,8 @@ Escrevemos para informar sobre a ausência do paciente ${paciente.Paciente} à c
   return (
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */} 
-          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */} 
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */}
+          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */}
             <TextField
               fullWidth
               variant="outlined"
@@ -839,7 +840,7 @@ Escrevemos para informar sobre a ausência do paciente ${paciente.Paciente} à c
             </Select>
           </FormControl>
 
-          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */} 
+          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
           <Tooltip title="Atualizar dados">
             <span>
               <IconButton
