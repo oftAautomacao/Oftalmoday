@@ -64,7 +64,7 @@ interface SnackbarState {
 }
 
 const ReconfirmacaoPacientes: React.FC = () => {
-  const { database } = useAmbiente();
+  const { database, ambiente } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
   // Filtros
@@ -454,9 +454,9 @@ const ReconfirmacaoPacientes: React.FC = () => {
       const whatsappCel = params.row.WhatsAppCel || '';
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
 
-      const numeroLimpo = whatsappCel.replace(/\D/g, '').replace(/^55/, '');
+      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
       const mensagem = formatarMensagem(params.row);
-      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroLimpo}&text=${mensagem}&type=phone_number&app_absent=0`;
+      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${mensagem}&type=phone_number&app_absent=0`;
 
       return (
         <Tooltip title="Clique para copiar o link" arrow>
