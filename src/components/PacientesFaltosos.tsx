@@ -268,10 +268,10 @@ const PacientesFaltosos: React.FC = () => {
     const hora = dataMarcada[2]; // Pega a hora diretamente do segundo elemento
 
     // Texto principal da mensagem
-     let mensagem = `Olá! Aqui é da Oftalmo Day.`
+     let mensagem = `Olá!\nAqui é da Oftalmo Day.`
 
-      mensagem +=`\nNa data ${data} às ${hora}, o(a) paciente ${paciente.Paciente} tinha uma consulta agendada com o(a) Dr(a) ${paciente.Medico}. Vimos que não pôde comparecer.
-      \nGostaria de estar agendando uma nova consulta? 😊`;
+      mensagem +=`\nVimos que não pôde comparecer à consulta agendada em ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}. 
+      \nGostaria de reagendar? 😊`;
 
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
