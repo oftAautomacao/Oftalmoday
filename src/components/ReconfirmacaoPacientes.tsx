@@ -290,9 +290,11 @@ const ReconfirmacaoPacientes: React.FC = () => {
     mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção. " +
     "Pedidos posteriores: prazo até 48h e retirada apenas na recepção";
 
+    mensagem += `\n\n\nIDMarcacao: ${paciente.IDMarcacao}`;
+
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
-      .replace(/'/g, "%27")
+      .replace(/\'/g, "%27")
       .replace(/\*/g, "%2A");
   }, []);
 
@@ -553,6 +555,13 @@ const ReconfirmacaoPacientes: React.FC = () => {
       valueFormatter: (params) => params.value || 'Não informado'
     },
     {
+      field: 'IDMarcacao',
+      headerName: 'ID Marcação',
+      flex: 1,
+      minWidth: 120,
+      valueFormatter: (params) => params.value || 'N/A'
+    },
+    {
       field: 'Telefone',
       headerName: 'Telefone',
       flex: 1,
@@ -762,8 +771,8 @@ const ReconfirmacaoPacientes: React.FC = () => {
   return (
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */} 
-          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */} 
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */}
+          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */}
             <TextField
               fullWidth
               variant="outlined"
@@ -854,7 +863,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             </Select>
           </FormControl>
 
-          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */} 
+          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
           <Tooltip title="Atualizar dados">
             <span>
               <IconButton

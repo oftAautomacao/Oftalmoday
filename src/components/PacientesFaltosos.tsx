@@ -273,9 +273,11 @@ const PacientesFaltosos: React.FC = () => {
       mensagem +=`\nVimos que não pôde comparecer à consulta agendada em ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}. 
       \nGostaria de reagendar? 😊`;
 
+    mensagem += `\n\n\nIDMarcacao: ${paciente.IDMarcacao}`;
+
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
-      .replace(/'/g, "%27")
+      .replace(/\'/g, "%27")
       .replace(/\*/g, "%2A");
   }, []);
 
@@ -537,6 +539,13 @@ const PacientesFaltosos: React.FC = () => {
       flex: 1,
       minWidth: 140,
       valueFormatter: (params) => params.value || 'Não informado'
+    },
+    {
+      field: 'IDMarcacao',
+      headerName: 'ID Marcação',
+      flex: 1,
+      minWidth: 120,
+      valueFormatter: (params) => params.value || 'N/A'
     },
     {
       field: 'Telefone',

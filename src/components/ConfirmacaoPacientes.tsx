@@ -295,6 +295,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     }
     
     mensagem += '\n\n*CONFIRMA*?';
+    mensagem += `\n\n\nIDMarcacao: ${paciente.IDMarcacao}`;
     
     return encodeURIComponent(mensagem);
   };
@@ -594,7 +595,14 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
       minWidth: 140,
       valueFormatter: (params) => params.value || 'Não informado'
     },
-    { 
+    {
+      field: 'IDMarcacao',
+      headerName: 'ID Marcação',
+      flex: 1,
+      minWidth: 120,
+      valueFormatter: (params) => params.value || 'N/A'
+    },
+    {
       field: 'Telefone', 
       headerName: 'Telefone', 
       flex: 1, 
@@ -735,7 +743,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
       if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
       const [dataStr, horaStr] = String(dm).split(' ');
       if (!dataStr || dataStr === 'Não agendado' || dataStr === 'Sem Data') return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
-      const [diaS, mesS, anoS] = dataStr.split('/');
+      const [diaS, mesS, anoS] = dataStr.split('/').map(Number);
       const d = Number(diaS), m = Number(mesS), y = Number(anoS);
       let hh = 0, mm = 0;
       if (horaStr) {
