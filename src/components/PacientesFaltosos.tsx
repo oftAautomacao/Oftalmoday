@@ -273,8 +273,6 @@ const PacientesFaltosos: React.FC = () => {
       mensagem +=`\nVimos que não pôde comparecer à consulta agendada em ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}. 
       \nGostaria de reagendar? 😊`;
 
-    mensagem += `\n\n\nIDMarcacao: ${paciente.IDMarcacao}`;
-
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
       .replace(/\'/g, "%27")

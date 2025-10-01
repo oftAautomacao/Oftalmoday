@@ -295,7 +295,6 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     }
     
     mensagem += '\n\n*CONFIRMA*?';
-    mensagem += `\n\n\nIDMarcacao: ${paciente.IDMarcacao}`;
     
     return encodeURIComponent(mensagem);
   };

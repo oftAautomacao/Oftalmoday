@@ -63,7 +63,7 @@ interface SnackbarState {
   severity: 'success' | 'error' | 'info' | 'warning';
 }
 
-const ReconfirmacaoPacientes: React.FC = () => {
+const PesquisaSatisfacao: React.FC = () => {
   const { database, ambiente } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
@@ -102,7 +102,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             ...erro,
             id,
             tipo: 'erro' as const,
-            mensagem: 'Erro na reconfirmação' // Adjusted message
+            mensagem: 'Erro na pesquisa de satisfação' // Adjusted message
           });
         }
       }
@@ -166,7 +166,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     setLoading(true); // Set loading true when starting data load
     setError(null);
 
-    const path = '/OFT/45/reconfirmacaoPacientes';
+    const path = '/OFT/45/pesquisaSatisfacao';
     const rootRef = ref(database, path);
 
     const onDataChange = (snapshot: any) => {
@@ -213,7 +213,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
 
       // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
       Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
-        if ((paciente as any).Copiado === true) {
+        if ((paciente as any).Copiado === true || (paciente as any).Medico === "Campo Visual") {
           novosSelecionados[id] = true;
         }
       });
@@ -243,7 +243,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         // Atualiza apenas o campo Copiado sem modificar outros campos
-        const pacienteRef = ref(database, `/OFT/45/reconfirmacaoPacientes/aEnviar/${pacienteId}`);
+        const pacienteRef = ref(database, `/OFT/45/pesquisaSatisfacao/aEnviar/${pacienteId}`);
 
         // Atualiza apenas o campo Copiado
         update(pacienteRef, { Copiado: true }).catch((error: Error) => {
@@ -265,34 +265,17 @@ const ReconfirmacaoPacientes: React.FC = () => {
     // Extrai data e hora da string DataMarcada
     const dataMarcada = paciente.DataMarcada.split(' ');
     const data = dataMarcada[0];
-    const hora = dataMarcada[1]; // Pega a hora diretamente do segundo elemento
 
     // Texto principal da mensagem
-    let mensagem = "*Olá, bom dia!* \n*Somos da clínica Oftalmo Day!*";
-
-    // Verifica se o médico é "Campo Visual"
-    if (paciente.Medico === "Campo Visual") {
-      mensagem += "\nPassando para lembrar do exame do paciente " +
-                paciente.Paciente + " para *HOJE*, dia " +
-                data + " às " + hora;
-    } else {
-      // Formato padrão para outros médicos
-      mensagem += "\nPassando para lembrar do agendamento do paciente " +
-                paciente.Paciente + " para *HOJE*, dia " +
-                data + " às " + hora + " com o(a) Dr(a) " + paciente.Medico + ".";
-    }
-
-    // Adiciona o complemento da mensagem
-    // mensagem += "\n\n📍 Caso necessite de declaração de comparecimento ou emissão de Nota Carioca, " +
-    //            "solicitamos que o pedido seja feito no dia da consulta, diretamente na recepção da clínica. " +
-    //            "Se a solicitação for feita posteriormente, o prazo para entrega será de até 24 horas.";
-
-    mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção. " +
-    "Pedidos posteriores: prazo até 48h e retirada apenas na recepção";
+    let mensagem = `Olá!\nSomos da Clínica Oftalmo Day.`;
+    mensagem += `\n\nObrigado por escolher nosso atendimento para ${paciente.Paciente} em ${data}.`;
+    mensagem += `\n\nPara que possamos melhorar ainda mais, pedimos que clique no link abaixo, avalie-nos no Google e deixe um comentário.`;
+    mensagem += `\n\nhttps://g.page/r/CfkFYbj9RhlpEBM/review`;
+    mensagem += `\n\nObrigado e até a próxima consulta.`;
 
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
-      .replace(/\'/g, "%27")
+      .replace(/'/g, "%27")
       .replace(/\*/g, "%2A");
   }, []);
 
@@ -308,7 +291,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     // Atualiza o Firebase
     if (database) {
       const updates: Record<string, any> = {};
-      const caminho = `/OFT/45/reconfirmacaoPacientes/aEnviar/${rowId}/Copiado`;
+      const caminho = `/OFT/45/pesquisaSatisfacao/aEnviar/${rowId}/Copiado`;
 
       if (novoEstado) { // Use novoEstado here
         // Se estiver marcando, adiciona o campo copiado: true
@@ -392,7 +375,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             <Box
               component="input"
               type="checkbox"
-              checked={!!selectedRows[rowId]}
+              checked={!!selectedRows[rowId] || params.row.Medico === "Campo Visual"}
               onChange={() => toggleRowSelection(rowId)}
               onClick={(e) => e.stopPropagation()}
               sx={{
@@ -451,6 +434,9 @@ const ReconfirmacaoPacientes: React.FC = () => {
     sortable: false,
     filterable: false,
     renderCell: (params: GridRenderCellParams) => {
+      if (params.row.Medico === "Campo Visual") {
+        return '';
+      }
       const whatsappCel = params.row.WhatsAppCel || '';
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
 
@@ -521,7 +507,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
           <div style={{ fontWeight: 'bold' }}>{params.value || 'Não informado'}</div>
           {params.row.tipo === 'erro' && (
             <div style={{ color: '#d32f2f', fontSize: '0.75rem' }}>
-              Erro na reconfirmação
+              Erro na pesquisa de satisfação
             </div>
           )}
         </Box>
@@ -760,7 +746,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
       TelefoneRes: erro.TelefoneRes || erro.TelefoneCel || erro.Telefone || erro.TelefoneCom || 'Não informado',
       IDMarcacao: erro.IDMarcacao || 'N/A',
       status: 'erro', // Status fixo como 'erro' para destacar na tabela
-      mensagem: erro.mensagem || 'Erro na reconfirmação',
+      mensagem: erro.mensagem || 'Erro na pesquisa de satisfação',
       Copiado: erro.Copiado, // Include Copiado status
     }));
   }, [errosFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
@@ -769,8 +755,8 @@ const ReconfirmacaoPacientes: React.FC = () => {
   return (
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */}
-          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */}
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */} 
+          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */} 
             <TextField
               fullWidth
               variant="outlined"
@@ -861,7 +847,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             </Select>
           </FormControl>
 
-          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
+          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */} 
           <Tooltip title="Atualizar dados">
             <span>
               <IconButton
@@ -935,7 +921,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
           <Tab
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>Pacientes</span>
+                <span>Pesquisas</span>
                 {rowsPacientes.length > 0 && (
                   <Box sx={{
                     bgcolor: 'primary.main',
@@ -1009,7 +995,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
                       Nenhum paciente encontrado
                     </Typography>
                     <Typography variant="body2" color="textSecondary" align="center">
-                      {search ? 'Nenhum resultado para a busca atual' : 'Nenhum paciente aguardando reconfirmação'}
+                      {search ? 'Nenhum resultado para a busca atual' : 'Nenhum paciente na lista de pesquisa de satisfação'}
                     </Typography>
                   </Box>
                 ),
@@ -1058,7 +1044,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
                       Nenhum erro encontrado
                     </Typography>
                     <Typography variant="body2" color="textSecondary" align="center">
-                      {search ? 'Nenhum resultado para a busca atual' : 'Nenhum erro de reconfirmação'}
+                      {search ? 'Nenhum resultado para a busca atual' : 'Nenhum erro na lista de pesquisa de satisfação'}
                     </Typography>
                   </Box>
                 ),
@@ -1120,4 +1106,4 @@ const ReconfirmacaoPacientes: React.FC = () => {
   );
 };
 
-export default ReconfirmacaoPacientes;
+export default PesquisaSatisfacao;
