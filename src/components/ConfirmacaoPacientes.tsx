@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ref, onValue, update } from 'firebase/database';
 import { useAmbiente } from '../contexts/AmbienteContext';
+import { normalizeMessage } from '../utils/normalizeMessage';
 import { 
   Box, 
   Typography, 
@@ -107,13 +108,13 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
       };
     }
 
-    const searchLower = search.toLowerCase();
+    const searchNormalized = normalizeMessage(search);
 
     // Filtra pacientes
     const pacientesFiltrados = listaPacientes.filter(paciente => 
       Object.entries(paciente).some(([key, value]) => {
         if (['id', 'tipo', 'IDMarcacao'].includes(key)) return false;
-        return String(value).toLowerCase().includes(searchLower);
+        return normalizeMessage(String(value)).includes(searchNormalized);
       })
     );
 
@@ -121,7 +122,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     const errosFiltrados = listaErros.filter(erro => 
       Object.entries(erro).some(([key, value]) => {
         if (['id', 'tipo'].includes(key)) return false;
-        return String(value).toLowerCase().includes(searchLower);
+        return normalizeMessage(String(value)).includes(searchNormalized);
       })
     );
 
@@ -725,13 +726,13 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     }
     // filtro médico (múltiplo)
     if (filtroMedico.length > 0) {
-      const med = String(item.Medico || '').trim();
-      if (!filtroMedico.includes(med)) return false;
+      const med = normalizeMessage(String(item.Medico || ''));
+      if (!filtroMedico.map(m => normalizeMessage(m)).includes(med)) return false;
     }
     // filtro convênio (múltiplo)
     if (filtroConvenio.length > 0) {
-      const conv = String(item.Convenio || '').trim();
-      if (!filtroConvenio.includes(conv)) return false;
+      const conv = normalizeMessage(String(item.Convenio || ''));
+      if (!filtroConvenio.map(c => normalizeMessage(c)).includes(conv)) return false;
     }
     return true;
   };
