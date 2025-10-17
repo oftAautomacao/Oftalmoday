@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue, update, DataSnapshot } from 'firebase/database';
 import { useAmbiente } from '../contexts/AmbienteContext';
 import {
   Box,
@@ -137,7 +137,7 @@ const PacientesFaltosos: React.FC = () => {
     const setMedicos = new Set<string>();
     const setConvenios = new Set<string>();
 
-    [...pacientesFiltrados, ...errosFiltrados].forEach((item: any) => {
+    [...pacientesFiltrados, ...errosFiltrados].forEach((item: Paciente) => {
       setDatas.add(extrairData(item.DataMarcada));
       if (item.Medico) setMedicos.add(String(item.Medico));
       if (item.Convenio) setConvenios.add(String(item.Convenio));
@@ -169,7 +169,7 @@ const PacientesFaltosos: React.FC = () => {
     const path = '/OFT/45/pacientesFaltosos';
     const rootRef = ref(database, path);
 
-    const onDataChange = (snapshot: any) => {
+    const onDataChange = (snapshot: DataSnapshot) => {
       try {
         if (snapshot.exists()) {
           const dadosFirebase = snapshot.val();
@@ -187,7 +187,7 @@ const PacientesFaltosos: React.FC = () => {
       }
     };
 
-    const onError = (error: any) => {
+    const onError = (error: Error) => {
       console.error('Erro ao carregar dados:', error);
       setError('Erro ao conectar ao banco de dados');
       setLoading(false); // Set loading false on error
@@ -213,7 +213,7 @@ const PacientesFaltosos: React.FC = () => {
 
       // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
       Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
-        if ((paciente as any).Copiado === true || (paciente as any).Medico === "Campo Visual") {
+        if (paciente.Copiado === true || paciente.Medico === "Campo Visual") {
           novosSelecionados[id] = true;
         }
       });
@@ -275,7 +275,7 @@ const PacientesFaltosos: React.FC = () => {
 
     // Codifica a mensagem para URL (mantendo os caracteres especiais)
     return encodeURIComponent(mensagem)
-      .replace(/\'/g, "%27")
+      .replace(/'/g, "%27")
       .replace(/\*/g, "%2A");
   }, []);
 
@@ -290,7 +290,7 @@ const PacientesFaltosos: React.FC = () => {
 
     // Atualiza o Firebase
     if (database) {
-      const updates: Record<string, any> = {};
+      const updates: Record<string, boolean | null> = {};
       const caminho = `/OFT/45/pacientesFaltosos/aEnviar/${rowId}/Copiado`;
 
       if (novoEstado) { // Use novoEstado here
@@ -553,7 +553,7 @@ const PacientesFaltosos: React.FC = () => {
       renderCell: (params: GridRenderCellParams) => {
         // Para a sub-aba de Pacientes, mostra APENAS o WhatsAppCel
         if (tabAtiva === 0) {
-          let whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
+          const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
 
           if (!whatsappCel || whatsappCel.trim() === '') {
             return 'Não informado';
@@ -659,7 +659,7 @@ const PacientesFaltosos: React.FC = () => {
   // Predicados de filtro
   const extrairApenasData = (dm?: string) => (dm ? String(dm).split(' ')[0] : 'Sem Data');
 
-  const aplicaFiltros = (item: any) => {
+  const aplicaFiltros = (item: Paciente) => {
     // filtro por data existente (select)
     if (filtroDataExistente.length > 0) {
       const d = extrairApenasData(item.DataMarcada);
