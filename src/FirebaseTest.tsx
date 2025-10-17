@@ -36,7 +36,7 @@ const FirebaseTest: React.FC = () => {
       // Tenta acessar o caminho específico
       try {
         setStatus(prev => prev + '\n\n🔍 Acessando o caminho específico...');
-        const specificRef = ref(database, '/OFT/45/confirmacaoPacientes/erro');
+        const specificRef = ref(database, '/OFT/45/confirmacaoPacientes/site/erro');
         const specificSnapshot = await get(specificRef);
         
         if (specificSnapshot.exists()) {

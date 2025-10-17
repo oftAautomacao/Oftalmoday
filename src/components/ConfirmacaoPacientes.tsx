@@ -170,7 +170,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     setLoading(true);
     setError(null);
     
-    const path = '/OFT/45/confirmacaoPacientes';
+    const path = '/OFT/45/confirmacaoPacientes/site';
     const rootRef = ref(database, path);
     
     console.log(`Caminho de referência: ${path}`);
@@ -314,7 +314,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         // Atualiza apenas o campo Copiado sem modificar outros campos
-        const pacienteRef = ref(database, `/OFT/45/confirmacaoPacientes/aEnviar/${pacienteId}`);
+        const pacienteRef = ref(database, `/OFT/45/confirmacaoPacientes/site/aEnviar/${pacienteId}`);
         
         // Atualiza apenas o campo Copiado
         update(pacienteRef, { Copiado: true }).catch((error: Error) => {
@@ -418,7 +418,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     // Atualiza o Firebase
     if (database) {
       const updates: Record<string, any> = {};
-      const caminho = `/OFT/45/confirmacaoPacientes/aEnviar/${rowId}/Copiado`;
+      const caminho = `/OFT/45/confirmacaoPacientes/site/aEnviar/${rowId}/Copiado`;
       
       if (novoEstado) {
         // Se estiver marcando, adiciona o campo copiado: true

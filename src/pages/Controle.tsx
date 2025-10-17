@@ -44,7 +44,7 @@ function Controle() {
   // Carrega os erros de confirmação
   useEffect(() => {
     if (!database) return;
-    const errosRef = ref(database, '/OFT/45/confirmacaoPacientes/erro');
+    const errosRef = ref(database, '/OFT/45/confirmacaoPacientes/site/erro');
 
     const unsubscribe = onValue(errosRef, (snapshot: DataSnapshot) => {
       const dados = snapshot.val();

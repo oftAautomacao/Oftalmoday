@@ -46,7 +46,7 @@ async function testEnvironment(env: 'teste' | 'producao') {
     
     // Tenta acessar o caminho específico
     console.log('\nTentando acessar o caminho específico...');
-    const specificRef = ref(db, '/OFT/45/confirmacaoPacientes/erro');
+    const specificRef = ref(db, '/OFT/45/confirmacaoPacientes/site/erro');
     const specificSnapshot = await get(specificRef);
     
     if (specificSnapshot.exists()) {

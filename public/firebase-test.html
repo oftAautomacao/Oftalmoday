@@ -117,7 +117,7 @@
                 
                 // Tenta acessar o caminho específico
                 log('\n🔍 Tentando acessar o caminho específico...', 'info');
-                const specificRef = db.ref('/OFT/45/confirmacaoPacientes/erro');
+                const specificRef = db.ref('/OFT/45/confirmacaoPacientes/site/erro');
                 const specificSnapshot = await specificRef.once('value');
                 
                 if (specificSnapshot.exists()) {
