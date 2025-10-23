@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ref, onValue, update, DataSnapshot } from 'firebase/database';
 import { useAmbiente } from '../contexts/AmbienteContext';
+import { normalizeMessage } from '../utils/normalizeMessage';
 import {
   Box,
   Typography,
@@ -108,22 +109,30 @@ const PacientesFaltosos: React.FC = () => {
       }
     }
 
-    const filterFn = (item: Paciente, searchTerm: string) =>
-      Object.entries(item).some(([key, value]) =>
-        !['id', 'tipo'].includes(key) &&
-        String(value).toLowerCase().includes(searchTerm)
-      );
+    if (!search) {
+      return { 
+        pacientesFiltrados: listaPacientes, 
+        errosFiltrados: listaErros 
+      };
+    }
 
-    const searchTerm = search.toLowerCase();
+    const searchNormalized = normalizeMessage(search);
 
-    const filteredPacientes = search
-      ? listaPacientes.filter(p => filterFn(p, searchTerm))
-      : listaPacientes;
-    const filteredErros = search
-      ? listaErros.filter(e => filterFn(e, searchTerm))
-      : listaErros;
+    const pacientesFiltrados = listaPacientes.filter(paciente => 
+      Object.entries(paciente).some(([key, value]) => {
+        if (['id', 'tipo', 'IDMarcacao'].includes(key)) return false;
+        return normalizeMessage(String(value)).includes(searchNormalized);
+      })
+    );
 
-    return { pacientesFiltrados: filteredPacientes, errosFiltrados: filteredErros }; // Renamed
+    const errosFiltrados = listaErros.filter(erro => 
+      Object.entries(erro).some(([key, value]) => {
+        if (['id', 'tipo'].includes(key)) return false;
+        return normalizeMessage(String(value)).includes(searchNormalized);
+      })
+    );
+
+    return { pacientesFiltrados, errosFiltrados };
   }, [dados, search]);
 
   // Extrai datas únicas (DD/MM/AAAA), médicos e convênios únicos
@@ -667,13 +676,13 @@ const PacientesFaltosos: React.FC = () => {
     }
     // filtro médico (múltiplo)
     if (filtroMedico.length > 0) {
-      const med = String(item.Medico || '').trim();
-      if (!filtroMedico.includes(med)) return false;
+      const med = normalizeMessage(String(item.Medico || ''));
+      if (!filtroMedico.map(m => normalizeMessage(m)).includes(med)) return false;
     }
     // filtro convênio (múltiplo)
     if (filtroConvenio.length > 0) {
-      const conv = String(item.Convenio || '').trim();
-      if (!filtroConvenio.includes(conv)) return false;
+      const conv = normalizeMessage(String(item.Convenio || ''));
+      if (!filtroConvenio.map(c => normalizeMessage(c)).includes(conv)) return false;
     }
     return true;
   };
