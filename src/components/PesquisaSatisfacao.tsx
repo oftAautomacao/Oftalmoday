@@ -34,6 +34,7 @@ const Alert = React.forwardRef<HTMLDivElement, MuiAlertProps>(function Alert(
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 interface Paciente {
   id: string;
@@ -230,6 +231,25 @@ const PesquisaSatisfacao: React.FC = () => {
       if (unsubscribe) unsubscribe();
     };
   }, [carregarDados]);
+
+  // Função para copiar apenas o telefone
+  const copiarTelefone = (telefone: string, pacienteId: string) => {
+    const numeroLimpo = String(telefone).replace(/\D/g, '');
+    navigator.clipboard.writeText(numeroLimpo).then(() => {
+      setSnackbar({ open: true, message: 'Telefone copiado!', severity: 'success' });
+      
+      // Atualiza o banco de dados para marcar como copiado
+      if (database) {
+        const pacienteRef = ref(database, `/OFT/45/pesquisaSatisfacao/aEnviar/${pacienteId}`);
+        update(pacienteRef, { Copiado: true }).catch((error: Error) => {
+          console.error('Erro ao atualizar status de cópia no banco de dados:', error);
+        });
+      }
+    }).catch((err) => {
+      console.error('Falha ao copiar telefone: ', err);
+      setSnackbar({ open: true, message: 'Falha ao copiar telefone.', severity: 'error' });
+    });
+  };
 
   // Função para copiar o link do WhatsApp para a área de transferência
   const copiarParaAreaTransferencia = (texto: string, pacienteId: string) => {
@@ -552,28 +572,20 @@ const PesquisaSatisfacao: React.FC = () => {
       flex: 1,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => {
-        // Para a sub-aba de Pacientes, mostra APENAS o WhatsAppCel
-        if (tabAtiva === 0) {
-          let whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
+        const renderTelefone = (tel: string) => {
+          if (!tel || tel.trim() === '') return 'Não informado';
 
-          if (!whatsappCel || whatsappCel.trim() === '') {
-            return 'Não informado';
-          }
-
-          // Remove o 55 do início do número para exibição
-          const numeroExibicao = whatsappCel.replace(/^55/, '');
-          // Remove todos os caracteres não numéricos e o 55 do início se existir
-          const numeroLimpo = whatsappCel.replace(/\D/g, '').replace(/^55/, '');
-          // Adiciona apenas um 55 no link do WhatsApp
-          const whatsappLink = `https://wa.me/55${numeroLimpo}`;
+          const numeroLimpo = tel.replace(/\D/g, '');
+          const numeroExibicao = tel.replace(/^55/, '');
+          const whatsappLink = `https://wa.me/55${numeroLimpo.replace(/^55/, '')}`;
 
           return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <a
-                href={whatsappLink}
-                target="_blank"
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+              <a 
+                href={whatsappLink} 
+                target="_blank" 
                 rel="noopener noreferrer"
-                style={{
+                style={{ 
                   textDecoration: 'none',
                   color: '#1976d2',
                   display: 'flex',
@@ -583,22 +595,36 @@ const PesquisaSatisfacao: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-                  alt="WhatsApp"
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    flexShrink: 0
-                  }}
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
+                  alt="WhatsApp" 
+                  style={{ width: '14px', height: '14px', flexShrink: 0 }}
                 />
                 {numeroExibicao}
               </a>
+              <Tooltip title="Copiar número">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copiarTelefone(tel, params.row.id);
+                  }}
+                  sx={{ p: '2px' }}
+                >
+                  <ContentCopyIcon sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </Tooltip>
             </Box>
           );
-        }
+        };
 
-        // Para a sub-aba de Erros, mantém o comportamento original (mostra todos os telefones)
+        // Para a sub-aba de Pacientes, mostra APENAS o WhatsAppCel
+        if (tabAtiva === 0) {
+          const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
+          return renderTelefone(whatsappCel);
+        }
+        
+        // Para a sub-aba de Erros, mostra todos os telefones
         const telefones = [
           params.row.Telefone,
           params.row.TelefoneCel,
@@ -606,45 +632,16 @@ const PesquisaSatisfacao: React.FC = () => {
           params.row.TelefoneRes,
           params.row.WhatsAppCel,
         ].filter(tel => tel && tel.trim() !== '');
-
+        
         if (telefones.length === 0) return 'Não informado';
-
+        
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {telefones.map((tel, index) => {
-              const numeroLimpo = tel.replace(/\D/g, '');
-              const whatsappLink = `https://wa.me/55${numeroLimpo}`;
-
-              return (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <a
-                    href={whatsappLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      textDecoration: 'none',
-                      color: '#1976d2',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <img
-                      src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-                      alt="WhatsApp"
-                      style={{
-                        width: '14px',
-                        height: '14px',
-                        flexShrink: 0
-                      }}
-                    />
-                    {tel}
-                  </a>
-                </Box>
-              );
-            })}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+            {telefones.map((tel, index) => (
+              <Box key={index}>
+                {renderTelefone(tel)}
+              </Box>
+            ))}
           </Box>
         );
       }
@@ -756,8 +753,8 @@ const PesquisaSatisfacao: React.FC = () => {
   return (
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */} 
-          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */} 
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap"> {/* Added flexWrap */}
+          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */}
             <TextField
               fullWidth
               variant="outlined"
@@ -848,7 +845,7 @@ const PesquisaSatisfacao: React.FC = () => {
             </Select>
           </FormControl>
 
-          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */} 
+          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
           <Tooltip title="Atualizar dados">
             <span>
               <IconButton
