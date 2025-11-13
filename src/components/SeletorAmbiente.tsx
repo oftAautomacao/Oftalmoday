@@ -15,6 +15,9 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CheckIcon from '@mui/icons-material/Check';
 import ComputerIcon from '@mui/icons-material/Computer';
 import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
+import BugReportIcon from '@mui/icons-material/BugReport';
+
+type AmbienteType = 'teste' | 'producao' | 'teste-b720c';
 
 const SeletorAmbiente: React.FC = () => {
   const { ambiente, atualizarAmbiente, carregando } = useAmbiente();
@@ -29,11 +32,24 @@ const SeletorAmbiente: React.FC = () => {
     setAnchorEl(null);
   };
 
-  const handleSelectAmbiente = (novoAmbiente: 'teste' | 'producao') => {
+  const handleSelectAmbiente = (novoAmbiente: AmbienteType) => {
     if (novoAmbiente !== ambiente) {
       atualizarAmbiente(novoAmbiente);
     }
     handleClose();
+  };
+
+  const getAmbienteLabel = (ambiente: AmbienteType) => {
+    switch (ambiente) {
+      case 'producao':
+        return 'Produção';
+      case 'teste':
+        return 'Ambiente de Teste';
+      case 'teste-b720c':
+        return 'Teste B720C';
+      default:
+        return 'Desconhecido';
+    }
   };
 
   return (
@@ -82,7 +98,7 @@ const SeletorAmbiente: React.FC = () => {
             AMBIENTE ATUAL
           </Typography>
           <Typography variant="body2" fontWeight="bold">
-            {ambiente === 'producao' ? 'Produção' : 'Ambiente de Teste'}
+            {getAmbienteLabel(ambiente)}
           </Typography>
         </Box>
         <Divider />
@@ -109,6 +125,18 @@ const SeletorAmbiente: React.FC = () => {
           </ListItemIcon>
           <ListItemText>Ambiente de Teste</ListItemText>
           {ambiente === 'teste' && <CheckIcon color="secondary" fontSize="small" />}
+        </MenuItem>
+
+        <MenuItem 
+          onClick={() => handleSelectAmbiente('teste-b720c')}
+          selected={ambiente === 'teste-b720c'}
+          sx={{ minWidth: '180px' }}
+        >
+          <ListItemIcon>
+            <BugReportIcon color={ambiente === 'teste-b720c' ? 'error' : 'inherit'} />
+          </ListItemIcon>
+          <ListItemText>Teste B720C</ListItemText>
+          {ambiente === 'teste-b720c' && <CheckIcon color="error" fontSize="small" />}
         </MenuItem>
       </Menu>
     </Box>
