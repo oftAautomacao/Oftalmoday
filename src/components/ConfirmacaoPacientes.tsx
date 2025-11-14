@@ -60,9 +60,7 @@ interface DadosFirebase {
   erro: Record<string, Omit<Paciente, 'id'>>;
 }
 
-interface ConfirmacaoPacientesProps {}
-
-const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
+const ConfirmacaoPacientes: React.FC = () => {
   const { database, ambiente } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
@@ -166,7 +164,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     const setMedicos = new Set<string>();
     const setConvenios = new Set<string>();
 
-    [...pacientesFiltrados, ...errosFiltrados].forEach((item: any) => {
+    [...pacientesFiltrados, ...errosFiltrados].forEach((item: Paciente) => {
       setDatas.add(extrairData(item.DataMarcada));
       if (item.Medico) setMedicos.add(String(item.Medico));
       if (item.Convenio) setConvenios.add(String(item.Convenio));
@@ -296,7 +294,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
   }, [database, ambiente, carregarDados]);
 
   // Função para formatar a mensagem de confirmação
-  const formatarMensagemConfirmacao = (paciente: any) => {
+  const formatarMensagemConfirmacao = (paciente: Paciente) => {
     const endereco = 'Praça Saenz Pena 45, sala 1508 - Tijuca';
     const pacienteNome = paciente.Paciente || 'Não informado';
     const dataMarcada = paciente.DataMarcada || 'Data não informada';
@@ -458,7 +456,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     
     // Atualiza o Firebase
     if (database) {
-      const updates: Record<string, any> = {};
+      const updates: Record<string, boolean | null> = {};
       const caminho = `/OFT/45/confirmacaoPacientes/site/aEnviar/${rowId}/Copiado`;
       
       if (novoEstado) {
@@ -510,7 +508,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
     }
 
     const novosSelecionados = { ...selectedRows };
-    const updates: Record<string, any> = {};
+    const updates: Record<string, boolean> = {};
 
     pacientesParaMarcar.forEach(id => {
       novosSelecionados[id] = true;
@@ -788,7 +786,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
   // Predicados de filtro
   const extrairApenasData = (dm?: string) => (dm ? String(dm).split(' ')[0] : 'Sem Data');
 
-  const aplicaFiltros = (item: any) => {
+  const aplicaFiltros = (item: Paciente) => {
     // filtro por data existente (select)
     if (filtroDataExistente.length > 0) {
       const d = extrairApenasData(item.DataMarcada);
@@ -886,7 +884,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
   return (
     <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+        <Stack direction="row" spacing={2} alignItems="center">
           <Box sx={{ flex: 1, minWidth: 320 }}>
             <TextField
               fullWidth
@@ -902,7 +900,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
 
           {/* As abas clássicas serão exibidas abaixo, dentro do Paper principal */}
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Datas existentes</InputLabel>
             <Select
               label="Datas existentes"
@@ -932,7 +930,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
 
           {/* Intervalo de datas removido conforme solicitação */}
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Médico</InputLabel>
             <Select
               label="Médico"
@@ -956,7 +954,7 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Convênio</InputLabel>
             <Select
               label="Convênio"
@@ -981,32 +979,34 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
           </FormControl>
 
           <Box sx={{ flexGrow: 1 }} />
-          <Tooltip title="Atualizar dados">
-            <span>
-              <IconButton onClick={carregarDados} disabled={loading} color="primary" size="small" sx={{ p: 0.75 }}>
-                <RefreshIcon color="inherit" fontSize="medium" />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Button variant="outlined" size="small" onClick={() => {
-            setSearch('');
-            setFiltroDataExistente([]);
-            // filtros de intervalo removidos
-            setFiltroMedico([]);
-            setFiltroConvenio([]);
-          }}>Limpar</Button>
-          <Button 
-            variant="contained" 
-            size="small" 
-            onClick={() => {
-              setBatchSelectType('');
-              setBatchSelectValue('');
-              setBatchSelectOpen(true);
-            }}
-            sx={{ backgroundColor: '#ffc107', color: 'black', '&:hover': { backgroundColor: '#ffa000' } }}
-          >
-            Marcar em Lote
-          </Button>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Tooltip title="Atualizar dados">
+              <span>
+                <IconButton onClick={carregarDados} disabled={loading} color="primary" size="small" sx={{ p: 0.75 }}>
+                  <RefreshIcon color="inherit" fontSize="medium" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Button variant="outlined" size="small" onClick={() => {
+              setSearch('');
+              setFiltroDataExistente([]);
+              // filtros de intervalo removidos
+              setFiltroMedico([]);
+              setFiltroConvenio([]);
+            }}>Limpar</Button>
+            <Button 
+              variant="contained" 
+              size="small" 
+              onClick={() => {
+                setBatchSelectType('');
+                setBatchSelectValue('');
+                setBatchSelectOpen(true);
+              }}
+              sx={{ backgroundColor: '#ffc107', color: 'black', '&:hover': { backgroundColor: '#ffa000' } }}
+            >
+              Marcar em Lote
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
 
