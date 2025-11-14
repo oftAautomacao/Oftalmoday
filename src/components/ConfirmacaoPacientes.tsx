@@ -478,7 +478,7 @@ const ConfirmacaoPacientes: React.FC = () => {
     }
   };
 
-  // Função para marcar em lote
+  // Função para Seleção Multipla
   const handleBatchSelect = () => {
     if (!batchSelectType || !batchSelectValue || !database) {
       setSnackbar({ open: true, message: 'Por favor, selecione o tipo e o valor do filtro.', severity: 'warning' });
@@ -1004,7 +1004,7 @@ const ConfirmacaoPacientes: React.FC = () => {
               }}
               sx={{ backgroundColor: '#ffc107', color: 'black', '&:hover': { backgroundColor: '#ffa000' } }}
             >
-              Marcar em Lote
+              Seleção Multipla
             </Button>
           </Stack>
         </Stack>
