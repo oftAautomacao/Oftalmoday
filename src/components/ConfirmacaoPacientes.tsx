@@ -20,6 +20,11 @@ import {
   Button,
   Tabs,
   Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material';
 
 // Componente Alert personalizado para o Snackbar
@@ -70,6 +75,12 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   // Sub-abas Pacientes/Erros (nível 2)
   const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
+
+  // Estado para o dialog de seleção em lote
+  const [batchSelectOpen, setBatchSelectOpen] = useState(false);
+  const [batchSelectType, setBatchSelectType] = useState(''); // 'data', 'medico', 'convenio'
+  const [batchSelectValue, setBatchSelectValue] = useState('');
+
 
   // Estado para controlar o Snackbar
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' | 'warning' }>({
@@ -467,6 +478,60 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
         }));
       });
     }
+  };
+
+  // Função para marcar em lote
+  const handleBatchSelect = () => {
+    if (!batchSelectType || !batchSelectValue || !database) {
+      setSnackbar({ open: true, message: 'Por favor, selecione o tipo e o valor do filtro.', severity: 'warning' });
+      return;
+    }
+
+    let pacientesParaMarcar: string[] = [];
+
+    if (batchSelectType === 'data') {
+      pacientesParaMarcar = rowsPacientes
+        .filter(p => extrairApenasData(p.DataMarcada) === batchSelectValue)
+        .map(p => p.id);
+    } else if (batchSelectType === 'medico') {
+      pacientesParaMarcar = rowsPacientes
+        .filter(p => p.Medico === batchSelectValue)
+        .map(p => p.id);
+    } else if (batchSelectType === 'convenio') {
+      pacientesParaMarcar = rowsPacientes
+        .filter(p => p.Convenio === batchSelectValue)
+        .map(p => p.id);
+    }
+
+    if (pacientesParaMarcar.length === 0) {
+      setSnackbar({ open: true, message: 'Nenhum paciente encontrado com o critério selecionado.', severity: 'info' });
+      setBatchSelectOpen(false);
+      return;
+    }
+
+    const novosSelecionados = { ...selectedRows };
+    const updates: Record<string, any> = {};
+
+    pacientesParaMarcar.forEach(id => {
+      novosSelecionados[id] = true;
+      const caminho = `/OFT/45/confirmacaoPacientes/site/aEnviar/${id}/Copiado`;
+      updates[caminho] = true;
+    });
+
+    // Atualiza o estado local
+    setSelectedRows(novosSelecionados);
+
+    // Atualiza o Firebase em lote
+    update(ref(database), updates)
+      .then(() => {
+        setSnackbar({ open: true, message: `${pacientesParaMarcar.length} paciente(s) marcados com sucesso!`, severity: 'success' });
+      })
+      .catch(error => {
+        console.error('Erro ao marcar pacientes em lote no Firebase:', error);
+        setSnackbar({ open: true, message: 'Ocorreu um erro ao marcar os pacientes.', severity: 'error' });
+      });
+
+    setBatchSelectOpen(false);
   };
 
   // Função para obter o índice da linha de forma segura
@@ -930,6 +995,18 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
             setFiltroMedico([]);
             setFiltroConvenio([]);
           }}>Limpar</Button>
+          <Button 
+            variant="contained" 
+            size="small" 
+            onClick={() => {
+              setBatchSelectType('');
+              setBatchSelectValue('');
+              setBatchSelectOpen(true);
+            }}
+            sx={{ backgroundColor: '#ffc107', color: 'black', '&:hover': { backgroundColor: '#ffa000' } }}
+          >
+            Marcar em Lote
+          </Button>
         </Stack>
       </Paper>
 
@@ -1119,6 +1196,63 @@ const ConfirmacaoPacientes: React.FC<ConfirmacaoPacientesProps> = ({}) => {
           Última atualização: {lastUpdated.toLocaleString('pt-BR')}
         </Typography>
       )}
+
+      {/* Dialog para seleção em lote */}
+      <Dialog open={batchSelectOpen} onClose={() => setBatchSelectOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Marcação em Lote</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Selecione um critério para marcar todos os pacientes correspondentes na tabela.
+          </DialogContentText>
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel>Critério</InputLabel>
+            <Select
+              label="Critério"
+              value={batchSelectType}
+              onChange={(e) => {
+                setBatchSelectType(e.target.value);
+                setBatchSelectValue(''); // Reseta o valor ao trocar o tipo
+              }}
+            >
+              <MenuItem value="data">Data</MenuItem>
+              <MenuItem value="medico">Médico</MenuItem>
+              <MenuItem value="convenio">Convênio</MenuItem>
+            </Select>
+          </FormControl>
+
+          {batchSelectType && (
+            <FormControl fullWidth size="small" disabled={!batchSelectType}>
+              <InputLabel>Valor</InputLabel>
+              <Select
+                label="Valor"
+                value={batchSelectValue}
+                onChange={(e) => setBatchSelectValue(e.target.value)}
+              >
+                {batchSelectType === 'data' && datasOrdenadas.map(d => (
+                  <MenuItem key={d} value={d}>{d}</MenuItem>
+                ))}
+                {batchSelectType === 'medico' && medicosUnicos.map(m => (
+                  <MenuItem key={m} value={m}>{m}</MenuItem>
+                ))}
+                {batchSelectType === 'convenio' && conveniosUnicos.map(c => (
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBatchSelectOpen(false)}>Cancelar</Button>
+          <Button 
+            onClick={handleBatchSelect} 
+            variant="contained"
+            disabled={!batchSelectType || !batchSelectValue}
+          >
+            Aplicar e Marcar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 };

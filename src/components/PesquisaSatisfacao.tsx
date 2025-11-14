@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue, update, DataSnapshot } from 'firebase/database';
 import { useAmbiente } from '../contexts/AmbienteContext';
 import { normalizeMessage } from '../utils/normalizeMessage';
 import {
@@ -139,7 +139,7 @@ const PesquisaSatisfacao: React.FC = () => {
     const setMedicos = new Set<string>();
     const setConvenios = new Set<string>();
 
-    [...pacientesFiltrados, ...errosFiltrados].forEach((item: any) => {
+    [...pacientesFiltrados, ...errosFiltrados].forEach((item: Paciente) => {
       setDatas.add(extrairData(item.DataMarcada));
       if (item.Medico) setMedicos.add(String(item.Medico));
       if (item.Convenio) setConvenios.add(String(item.Convenio));
@@ -168,10 +168,10 @@ const PesquisaSatisfacao: React.FC = () => {
     setLoading(true); // Set loading true when starting data load
     setError(null);
 
-    const path = '/OFT/45/pesquisaSatisfacao';
+    const path = '/OFT/45/pesquisaSatisfacao/site';
     const rootRef = ref(database, path);
 
-    const onDataChange = (snapshot: any) => {
+    const onDataChange = (snapshot: DataSnapshot) => {
       try {
         if (snapshot.exists()) {
           const dadosFirebase = snapshot.val();
@@ -189,7 +189,7 @@ const PesquisaSatisfacao: React.FC = () => {
       }
     };
 
-    const onError = (error: any) => {
+    const onError = (error: Error) => {
       console.error('Erro ao carregar dados:', error);
       setError('Erro ao conectar ao banco de dados');
       setLoading(false); // Set loading false on error
@@ -214,8 +214,8 @@ const PesquisaSatisfacao: React.FC = () => {
       const novosSelecionados: {[key: string]: boolean} = {};
 
       // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
-      Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
-        if ((paciente as any).Copiado === true || (paciente as any).Medico === "Campo Visual") {
+      Object.entries(dados.aEnviar).forEach(([id, paciente]: [string, Omit<Paciente, 'id'>]) => {
+        if (paciente.Copiado === true || paciente.Medico === "Campo Visual") {
           novosSelecionados[id] = true;
         }
       });
@@ -240,7 +240,7 @@ const PesquisaSatisfacao: React.FC = () => {
       
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
-        const pacienteRef = ref(database, `/OFT/45/pesquisaSatisfacao/aEnviar/${pacienteId}`);
+        const pacienteRef = ref(database, `/OFT/45/pesquisaSatisfacao/site/aEnviar/${pacienteId}`);
         update(pacienteRef, { Copiado: true }).catch((error: Error) => {
           console.error('Erro ao atualizar status de cópia no banco de dados:', error);
         });
@@ -264,7 +264,7 @@ const PesquisaSatisfacao: React.FC = () => {
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         // Atualiza apenas o campo Copiado sem modificar outros campos
-        const pacienteRef = ref(database, `/OFT/45/pesquisaSatisfacao/aEnviar/${pacienteId}`);
+        const pacienteRef = ref(database, `/OFT/45/pesquisaSatisfacao/site/aEnviar/${pacienteId}`);
 
         // Atualiza apenas o campo Copiado
         update(pacienteRef, { Copiado: true }).catch((error: Error) => {
@@ -311,8 +311,8 @@ const PesquisaSatisfacao: React.FC = () => {
 
     // Atualiza o Firebase
     if (database) {
-      const updates: Record<string, any> = {};
-      const caminho = `/OFT/45/pesquisaSatisfacao/aEnviar/${rowId}/Copiado`;
+      const updates: Record<string, boolean | null> = {};
+      const caminho = `/OFT/45/pesquisaSatisfacao/site/aEnviar/${rowId}/Copiado`;
 
       if (novoEstado) { // Use novoEstado here
         // Se estiver marcando, adiciona o campo copiado: true
@@ -657,7 +657,7 @@ const PesquisaSatisfacao: React.FC = () => {
   // Predicados de filtro
   const extrairApenasData = (dm?: string) => (dm ? String(dm).split(' ')[0] : 'Sem Data');
 
-  const aplicaFiltros = (item: any) => {
+  const aplicaFiltros = (item: Paciente) => {
     // filtro por data existente (select)
     if (filtroDataExistente.length > 0) {
       const d = extrairApenasData(item.DataMarcada);

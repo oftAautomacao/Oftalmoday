@@ -176,7 +176,7 @@ const PacientesFaltosos: React.FC = () => {
     setLoading(true); // Set loading true when starting data load
     setError(null);
 
-    const path = '/OFT/45/pacientesFaltosos';
+    const path = '/OFT/45/pacientesFaltosos/site';
     const rootRef = ref(database, path);
 
     const onDataChange = (snapshot: DataSnapshot) => {
@@ -248,7 +248,7 @@ const PacientesFaltosos: React.FC = () => {
       
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
-        const pacienteRef = ref(database, `/OFT/45/pacientesFaltosos/aEnviar/${pacienteId}`);
+        const pacienteRef = ref(database, `/OFT/45/pacientesFaltosos/site/aEnviar/${pacienteId}`);
         update(pacienteRef, { Copiado: true }).catch((error: Error) => {
           console.error('Erro ao atualizar status de cópia no banco de dados:', error);
         });
@@ -272,7 +272,7 @@ const PacientesFaltosos: React.FC = () => {
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         // Atualiza apenas o campo Copiado sem modificar outros campos
-        const pacienteRef = ref(database, `/OFT/45/pacientesFaltosos/aEnviar/${pacienteId}`);
+        const pacienteRef = ref(database, `/OFT/45/pacientesFaltosos/site/aEnviar/${pacienteId}`);
 
         // Atualiza apenas o campo Copiado
         update(pacienteRef, { Copiado: true }).catch((error: Error) => {
@@ -320,7 +320,7 @@ const PacientesFaltosos: React.FC = () => {
     // Atualiza o Firebase
     if (database) {
       const updates: Record<string, boolean | null> = {};
-      const caminho = `/OFT/45/pacientesFaltosos/aEnviar/${rowId}/Copiado`;
+      const caminho = `/OFT/45/pacientesFaltosos/site/aEnviar/${rowId}/Copiado`;
 
       if (novoEstado) { // Use novoEstado here
         // Se estiver marcando, adiciona o campo copiado: true
