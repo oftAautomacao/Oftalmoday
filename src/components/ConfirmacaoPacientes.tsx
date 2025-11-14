@@ -982,12 +982,12 @@ const ConfirmacaoPacientes: React.FC = () => {
           <Stack direction="row" spacing={1} alignItems="center">
             <Tooltip title="Atualizar dados">
               <span>
-                <IconButton onClick={carregarDados} disabled={loading} color="primary" size="small" sx={{ p: 0.75 }}>
-                  <RefreshIcon color="inherit" fontSize="medium" />
+                <IconButton onClick={carregarDados} disabled={loading} color="primary">
+                  <RefreshIcon />
                 </IconButton>
               </span>
             </Tooltip>
-            <Button variant="outlined" size="small" onClick={() => {
+            <Button variant="outlined" onClick={() => {
               setSearch('');
               setFiltroDataExistente([]);
               // filtros de intervalo removidos
@@ -996,7 +996,7 @@ const ConfirmacaoPacientes: React.FC = () => {
             }}>Limpar</Button>
             <Button 
               variant="contained" 
-              size="small" 
+              size="small"
               onClick={() => {
                 setBatchSelectType('');
                 setBatchSelectValue('');
