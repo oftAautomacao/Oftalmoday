@@ -210,19 +210,35 @@ const PesquisaSatisfacao: React.FC = () => {
 
   // Efeito para sincronizar o estado dos checkboxes com o campo 'Copiado' dos dados
   useEffect(() => {
+    const novosSelecionados: { [key: string]: boolean } = {};
     if (dados.aEnviar) {
-      const novosSelecionados: {[key: string]: boolean} = {};
-
-      // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
-      Object.entries(dados.aEnviar).forEach(([id, paciente]: [string, Omit<Paciente, 'id'>]) => {
+      Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
         if (paciente.Copiado === true || paciente.Medico === "Campo Visual") {
           novosSelecionados[id] = true;
         }
       });
-
-      setSelectedRows(novosSelecionados);
     }
+    setSelectedRows(novosSelecionados);
   }, [dados]);
+
+  // Efeito para marcar 'Campo Visual' como Copiado no Firebase ao carregar
+  useEffect(() => {
+    if (!database || !dados.aEnviar) return;
+
+    const updates: Record<string, true> = {};
+    Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
+      if (paciente.Medico === "Campo Visual" && paciente.Copiado !== true) {
+        updates[`/OFT/45/pesquisaSatisfacao/site/aEnviar/${id}/Copiado`] = true;
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      update(ref(database), updates).catch(error => {
+        console.error("Erro ao marcar 'Campo Visual' automaticamente no DB:", error);
+        setSnackbar({ open: true, message: "Erro ao atualizar status para Campo Visual.", severity: 'error' });
+      });
+    }
+  }, [dados, database]); // Depende de dados e database para re-executar
 
   // Efeito para carregar os dados
   useEffect(() => {
