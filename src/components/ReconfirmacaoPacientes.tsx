@@ -851,8 +851,8 @@ const ReconfirmacaoPacientes: React.FC = () => {
 
   return (
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+      <Paper sx={{ p: 2, mb: 3, overflowX: 'auto' }}>
+        <Stack direction="row" spacing={2} alignItems="center">
           <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */}
             <TextField
               fullWidth
@@ -868,7 +868,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             />
           </Box>
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Datas existentes</InputLabel>
             <Select
               label="Datas existentes"
@@ -896,7 +896,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Médico</InputLabel>
             <Select
               label="Médico"
@@ -920,7 +920,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Convênio</InputLabel>
             <Select
               label="Convênio"
