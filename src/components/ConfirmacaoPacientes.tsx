@@ -479,7 +479,7 @@ const ConfirmacaoPacientes: React.FC = () => {
   };
 
   // Função para Seleção Multipla
-  const handleBatchSelect = () => {
+  const handleBatchAction = (action: 'marcar' | 'desmarcar') => {
     if (!batchSelectType || !batchSelectValue || !database) {
       setSnackbar({ open: true, message: 'Por favor, selecione o tipo e o valor do filtro.', severity: 'warning' });
       return;
@@ -508,26 +508,40 @@ const ConfirmacaoPacientes: React.FC = () => {
     }
 
     const novosSelecionados = { ...selectedRows };
-    const updates: Record<string, boolean> = {};
+    const updates: Record<string, boolean | null> = {};
 
     pacientesParaMarcar.forEach(id => {
-      novosSelecionados[id] = true;
       const caminho = `/OFT/45/confirmacaoPacientes/site/aEnviar/${id}/Copiado`;
-      updates[caminho] = true;
+      if (action === 'marcar') {
+        novosSelecionados[id] = true;
+        updates[caminho] = true;
+      } else { // 'desmarcar'
+        delete novosSelecionados[id];
+        updates[caminho] = null; // null remove o campo no Firebase
+      }
     });
 
     // Atualiza o estado local
     setSelectedRows(novosSelecionados);
 
+    const successMessage = action === 'marcar'
+      ? `${pacientesParaMarcar.length} paciente(s) marcados com sucesso!`
+      : `${pacientesParaMarcar.length} paciente(s) desmarcado(s) com sucesso!`;
+
+    const errorMessage = action === 'marcar'
+      ? 'Ocorreu um erro ao marcar os pacientes.'
+      : 'Ocorreu um erro ao desmarcar os pacientes.';
+
     // Atualiza o Firebase em lote
     update(ref(database), updates)
       .then(() => {
-        setSnackbar({ open: true, message: `${pacientesParaMarcar.length} paciente(s) marcados com sucesso!`, severity: 'success' });
+        setSnackbar({ open: true, message: successMessage, severity: 'success' });
       })
       .catch(error => {
         console.error('Erro ao marcar pacientes em lote no Firebase:', error);
-        setSnackbar({ open: true, message: 'Ocorreu um erro ao marcar os pacientes.', severity: 'error' });
+        setSnackbar({ open: true, message: errorMessage, severity: 'error' });
       });
+
     setBatchSelectOpen(false);
   };
 
@@ -1243,11 +1257,19 @@ const ConfirmacaoPacientes: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setBatchSelectOpen(false)}>Cancelar</Button>
           <Button 
-            onClick={handleBatchSelect} 
+            onClick={() => handleBatchAction('desmarcar')}
+            variant="outlined"
+            color="secondary"
+            disabled={!batchSelectType || !batchSelectValue}
+          >
+            Desmarcar
+          </Button>
+          <Button 
+            onClick={() => handleBatchAction('marcar')} 
             variant="contained"
             disabled={!batchSelectType || !batchSelectValue}
           >
-            Aplicar e Marcar
+            Marcar
           </Button>
         </DialogActions>
       </Dialog>
