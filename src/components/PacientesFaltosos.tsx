@@ -21,6 +21,11 @@ import {
   Select, // Added
   MenuItem, // Added
   Button, // Added
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material';
 
 // Componente Alert personalizado para o Snackbar
@@ -87,6 +92,11 @@ const PacientesFaltosos: React.FC = () => {
     pageSize: 100,
   });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null); // Added
+
+  // Estado para o dialog de seleção em lote
+  const [batchSelectOpen, setBatchSelectOpen] = useState(false);
+  const [batchSelectType, setBatchSelectType] = useState(''); // 'data', 'medico', 'convenio'
+  const [batchSelectValue, setBatchSelectValue] = useState('');
 
   // Processa os dados para exibição
   const { pacientesFiltrados, errosFiltrados } = useMemo(() => {
@@ -341,6 +351,28 @@ const PacientesFaltosos: React.FC = () => {
     }
   };
 
+  // Predicados de filtro
+  const extrairApenasData = (dm?: string) => (dm ? String(dm).split(' ')[0] : 'Sem Data');
+
+  const aplicaFiltros = (item: Paciente) => {
+    // filtro por data existente (select)
+    if (filtroDataExistente.length > 0) {
+      const d = extrairApenasData(item.DataMarcada);
+      if (!filtroDataExistente.includes(d)) return false;
+    }
+    // filtro médico (múltiplo)
+    if (filtroMedico.length > 0) {
+      const med = normalizeMessage(String(item.Medico || ''));
+      if (!filtroMedico.map(m => normalizeMessage(m)).includes(med)) return false;
+    }
+    // filtro convênio (múltiplo)
+    if (filtroConvenio.length > 0) {
+      const conv = normalizeMessage(String(item.Convenio || ''));
+      if (!filtroConvenio.map(c => normalizeMessage(c)).includes(conv)) return false;
+    }
+    return true;
+  };
+
   // Função para obter o índice da linha de forma segura
   const getSafeRowIndex = (params: GridRenderCellParams, page: number, pageSize: number): number => {
     try {
@@ -355,6 +387,72 @@ const PacientesFaltosos: React.FC = () => {
       console.error('Erro ao obter índice da linha:', error);
       return (page * pageSize) + 1;
     }
+  };
+
+  // Função para Seleção Multipla
+  const handleBatchAction = (action: 'marcar' | 'desmarcar') => {
+    if (!batchSelectType || !batchSelectValue || !database) {
+      setSnackbar({ open: true, message: 'Por favor, selecione o tipo e o valor do filtro.', severity: 'warning' });
+      return;
+    }
+
+    const pacientesVisiveis = pacientesFiltrados.filter(aplicaFiltros);
+    let pacientesParaMarcar: string[] = [];
+
+    if (batchSelectType === 'data') {
+      pacientesParaMarcar = pacientesVisiveis
+        .filter(p => extrairApenasData(p.DataMarcada) === batchSelectValue)
+        .map(p => p.id);
+    } else if (batchSelectType === 'medico') {
+      pacientesParaMarcar = pacientesVisiveis
+        .filter(p => p.Medico === batchSelectValue)
+        .map(p => p.id);
+    } else if (batchSelectType === 'convenio') {
+      pacientesParaMarcar = pacientesVisiveis
+        .filter(p => p.Convenio === batchSelectValue)
+        .map(p => p.id);
+    }
+
+    if (pacientesParaMarcar.length === 0) {
+      setSnackbar({ open: true, message: 'Nenhum paciente encontrado com o critério selecionado.', severity: 'info' });
+      setBatchSelectOpen(false);
+      return;
+    }
+
+    const novosSelecionados = { ...selectedRows };
+    const updates: Record<string, boolean | null> = {};
+
+    pacientesParaMarcar.forEach(id => {
+      const caminho = `/OFT/45/pacientesFaltosos/site/aEnviar/${id}/Copiado`;
+      if (action === 'marcar') {
+        novosSelecionados[id] = true;
+        updates[caminho] = true;
+      } else { // 'desmarcar'
+        delete novosSelecionados[id];
+        updates[caminho] = null; // null remove o campo no Firebase
+      }
+    });
+
+    // Atualiza o estado local
+    setSelectedRows(novosSelecionados);
+
+    const successMessage = action === 'marcar'
+      ? `${pacientesParaMarcar.length} paciente(s) marcados com sucesso!`
+      : `${pacientesParaMarcar.length} paciente(s) desmarcado(s) com sucesso!`;
+
+    const errorMessage = action === 'marcar'
+      ? 'Ocorreu um erro ao marcar os pacientes.'
+      : 'Ocorreu um erro ao desmarcar os pacientes.';
+
+    // Atualiza o Firebase em lote
+    update(ref(database), updates)
+      .then(() => setSnackbar({ open: true, message: successMessage, severity: 'success' }))
+      .catch(error => {
+        console.error('Erro ao marcar pacientes em lote no Firebase:', error);
+        setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+      });
+
+    setBatchSelectOpen(false);
   };
 
   // Coluna de numeração sequencial com checkbox
@@ -662,28 +760,6 @@ const PacientesFaltosos: React.FC = () => {
   // Colunas para a aba de erros (inclui a numeração)
   const columnsErros = [numeroSequencialColumn, ...commonColumns];
 
-  // Predicados de filtro
-  const extrairApenasData = (dm?: string) => (dm ? String(dm).split(' ')[0] : 'Sem Data');
-
-  const aplicaFiltros = (item: Paciente) => {
-    // filtro por data existente (select)
-    if (filtroDataExistente.length > 0) {
-      const d = extrairApenasData(item.DataMarcada);
-      if (!filtroDataExistente.includes(d)) return false;
-    }
-    // filtro médico (múltiplo)
-    if (filtroMedico.length > 0) {
-      const med = normalizeMessage(String(item.Medico || ''));
-      if (!filtroMedico.map(m => normalizeMessage(m)).includes(med)) return false;
-    }
-    // filtro convênio (múltiplo)
-    if (filtroConvenio.length > 0) {
-      const conv = normalizeMessage(String(item.Convenio || ''));
-      if (!filtroConvenio.map(c => normalizeMessage(c)).includes(conv)) return false;
-    }
-    return true;
-  };
-
   // Dados formatados para as tabelas (aplica filtros adicionais)
   const rowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
@@ -854,39 +930,50 @@ const PacientesFaltosos: React.FC = () => {
           </FormControl>
 
           <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
-          <Tooltip title="Atualizar dados">
-            <span>
-              <IconButton
-                onClick={carregarDados} // Call carregarDados directly
-                disabled={loading}
-                sx={{
-                  height: '40px',
-                  width: '40px',
-                  backgroundColor: '#e8f5e9', // Verde claro
-                  '&:hover': {
-                    backgroundColor: '#c8e6c9' // Verde um pouco mais escuro no hover
-                  },
-                  '&:disabled': {
-                    backgroundColor: 'action.disabledBackground',
-                    color: 'action.disabled',
-                    cursor: 'not-allowed'
-                  }
-                }}
-              >
-                {loading ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <RefreshIcon />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Button variant="outlined" size="small" onClick={() => {
-            setSearch('');
-            setFiltroDataExistente([]);
-            setFiltroMedico([]);
-            setFiltroConvenio([]);
-          }}>Limpar</Button>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Tooltip title="Atualizar dados">
+              <span>
+                <IconButton
+                  onClick={carregarDados} // Call carregarDados directly
+                  disabled={loading}
+                  sx={{
+                    backgroundColor: '#e8f5e9', // Verde claro
+                    '&:hover': {
+                      backgroundColor: '#c8e6c9' // Verde um pouco mais escuro no hover
+                    },
+                    '&:disabled': {
+                      backgroundColor: 'action.disabledBackground',
+                      color: 'action.disabled'
+                    }
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <RefreshIcon />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Button variant="outlined" size="small" onClick={() => {
+              setSearch('');
+              setFiltroDataExistente([]);
+              setFiltroMedico([]);
+              setFiltroConvenio([]);
+            }}>Limpar</Button>
+            <Button 
+              variant="contained" 
+              size="small"
+              onClick={() => {
+                setBatchSelectType('');
+                setBatchSelectValue('');
+                setBatchSelectOpen(true);
+              }}
+              sx={{ backgroundColor: '#ffc107', color: 'black', '&:hover': { backgroundColor: '#ffa000' } }}
+            >
+              Seleção Multipla
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
 
@@ -1108,6 +1195,57 @@ const PacientesFaltosos: React.FC = () => {
           Última atualização: {lastUpdated.toLocaleString('pt-BR')}
         </Typography>
       )}
+
+      {/* Dialog para seleção em lote */}
+      <Dialog open={batchSelectOpen} onClose={() => setBatchSelectOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Marcação em Lote</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Selecione um critério para marcar todos os pacientes correspondentes na tabela.
+          </DialogContentText>
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel>Critério</InputLabel>
+            <Select
+              label="Critério"
+              value={batchSelectType}
+              onChange={(e) => {
+                setBatchSelectType(e.target.value);
+                setBatchSelectValue(''); // Reseta o valor ao trocar o tipo
+              }}
+            >
+              <MenuItem value="data">Data</MenuItem>
+              <MenuItem value="medico">Médico</MenuItem>
+              <MenuItem value="convenio">Convênio</MenuItem>
+            </Select>
+          </FormControl>
+
+          {batchSelectType && (
+            <FormControl fullWidth size="small" disabled={!batchSelectType}>
+              <InputLabel>Valor</InputLabel>
+              <Select
+                label="Valor"
+                value={batchSelectValue}
+                onChange={(e) => setBatchSelectValue(e.target.value)}
+              >
+                {batchSelectType === 'data' && datasOrdenadas.map(d => (
+                  <MenuItem key={d} value={d}>{d}</MenuItem>
+                ))}
+                {batchSelectType === 'medico' && medicosUnicos.map(m => (
+                  <MenuItem key={m} value={m}>{m}</MenuItem>
+                ))}
+                {batchSelectType === 'convenio' && conveniosUnicos.map(c => (
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBatchSelectOpen(false)}>Cancelar</Button>
+          <Button onClick={() => handleBatchAction('desmarcar')} variant="outlined" color="secondary" disabled={!batchSelectType || !batchSelectValue}>Desmarcar</Button>
+          <Button onClick={() => handleBatchAction('marcar')} variant="contained" disabled={!batchSelectType || !batchSelectValue}>Marcar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
