@@ -895,9 +895,9 @@ const ConfirmacaoPacientes: React.FC = () => {
   // Alternância de sub-aba poderá ser ativada via toggle futuramente
 
   return (
-    <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
+    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <Box sx={{ flex: 1, minWidth: 320 }}>
             <TextField
               fullWidth
@@ -913,7 +913,7 @@ const ConfirmacaoPacientes: React.FC = () => {
 
           {/* As abas clássicas serão exibidas abaixo, dentro do Paper principal */}
 
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Datas existentes</InputLabel>
             <Select
               label="Datas existentes"
@@ -943,7 +943,7 @@ const ConfirmacaoPacientes: React.FC = () => {
 
           {/* Intervalo de datas removido conforme solicitação */}
 
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Médico</InputLabel>
             <Select
               label="Médico"
@@ -967,7 +967,7 @@ const ConfirmacaoPacientes: React.FC = () => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Convênio</InputLabel>
             <Select
               label="Convênio"
