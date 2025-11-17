@@ -87,7 +87,7 @@ const ConfirmacaoPacientes: React.FC = () => {
     severity: 'success',
   });
 
-  const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
+  const handleSnackbarClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
       return;
     }
@@ -528,7 +528,6 @@ const ConfirmacaoPacientes: React.FC = () => {
         console.error('Erro ao marcar pacientes em lote no Firebase:', error);
         setSnackbar({ open: true, message: 'Ocorreu um erro ao marcar os pacientes.', severity: 'error' });
       });
-
     setBatchSelectOpen(false);
   };
 

@@ -159,7 +159,10 @@ function App() {
     }
   }, []);
 
-  const handleCloseSnackbar = () => {
+  const handleCloseSnackbar = (_event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
