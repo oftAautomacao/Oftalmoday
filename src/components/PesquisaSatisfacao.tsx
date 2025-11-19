@@ -70,6 +70,11 @@ interface SnackbarState {
   severity: 'success' | 'error' | 'info' | 'warning';
 }
 
+interface Mensagem {
+  ID: number;
+  Texto: string;
+}
+
 const PesquisaSatisfacao: React.FC = () => {
   const { database, ambiente } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
@@ -92,11 +97,25 @@ const PesquisaSatisfacao: React.FC = () => {
     pageSize: 100,
   });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null); // Added
+  const [mensagensPesquisa, setMensagensPesquisa] = useState<Mensagem[]>([]);
 
   // Estado para o dialog de seleção em lote
   const [batchSelectOpen, setBatchSelectOpen] = useState(false);
   const [batchSelectType, setBatchSelectType] = useState(''); // 'data', 'medico', 'convenio'
   const [batchSelectValue, setBatchSelectValue] = useState('');
+
+  useEffect(() => {
+    if (database) {
+      const pesquisaRef = ref(database, '/OFT/45/pesquisaSatisfacao/mensagens/consulta/1RPT5vKrcbNRRQZ7AeyfMNK620ksxeAqqIDJ-YivIPS0/mensagemConsulta');
+      onValue(pesquisaRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const mensagensArray = Object.values(data) as Mensagem[];
+          setMensagensPesquisa(mensagensArray);
+        }
+      });
+    }
+  }, [database]);
 
   // Processa os dados para exibição
   const { pacientesFiltrados, errosFiltrados } = useMemo(() => {
@@ -313,7 +332,21 @@ const PesquisaSatisfacao: React.FC = () => {
     const dataMarcada = paciente.DataMarcada.split(' ');
     const data = dataMarcada[0];
 
-    // Texto principal da mensagem
+    if (mensagensPesquisa.length > 0) {
+      // Escolhe uma mensagem aleatória
+      const randomIndex = Math.floor(Math.random() * mensagensPesquisa.length);
+      let mensagem = mensagensPesquisa[randomIndex].Texto;
+
+      // Substitui as variáveis na mensagem
+      mensagem = mensagem.replace(/{Paciente}/g, paciente.Paciente || '');
+      mensagem = mensagem.replace(/{DataMarcada}/g, paciente.DataMarcada || '');
+      mensagem = mensagem.replace(/{Medico}/g, paciente.Medico || '');
+      mensagem = mensagem.replace(/{Convenio}/g, paciente.Convenio || '');
+      
+      return mensagem;
+    }
+
+    // Texto principal da mensagem (fallback)
     let mensagem = `Olá!\nSomos da Clínica Oftalmo Day.`;
     mensagem += `\n\nObrigado por escolher nosso atendimento para ${paciente.Paciente} em ${data}.`;
     mensagem += `\n\nPara que possamos melhorar ainda mais, pedimos que clique no link abaixo, avalie-nos no Google e deixe um comentário.`;
@@ -322,7 +355,7 @@ const PesquisaSatisfacao: React.FC = () => {
 
     // Retorna a mensagem bruta
     return mensagem;
-  }, []);
+  }, [mensagensPesquisa]);
 
   // Função para alternar a seleção de uma linha
   const toggleRowSelection = (rowId: string) => {
