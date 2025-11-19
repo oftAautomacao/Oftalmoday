@@ -329,6 +329,11 @@ const ReconfirmacaoPacientes: React.FC = () => {
     mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção. " +
     "Pedidos posteriores: prazo até 48h e retirada apenas na recepção";
 
+    const telefone = paciente.WhatsAppCel || paciente.TelefoneCel || paciente.TelefoneRes || paciente.TelefoneCom || paciente.Telefone || '';
+    if (telefone) {
+      mensagem += `\n\n${telefone}`;
+    }
+
     // Retorna a mensagem bruta
     return mensagem;
   }, []);
