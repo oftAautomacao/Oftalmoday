@@ -312,10 +312,8 @@ const PacientesFaltosos: React.FC = () => {
       mensagem +=`\nVimos que não pôde comparecer à consulta agendada em ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}. 
       \nGostaria de reagendar? 😊`;
 
-    // Codifica a mensagem para URL (mantendo os caracteres especiais)
-    return encodeURIComponent(mensagem)
-      .replace(/'/g, "%27")
-      .replace(/\*/g, "%2A");
+    // Retorna a mensagem bruta
+    return mensagem;
   }, []);
 
   // Função para alternar a seleção de uma linha
@@ -552,12 +550,12 @@ const PacientesFaltosos: React.FC = () => {
     }
   };
 
-  // Coluna de link para WhatsApp
+  // Coluna de texto para pacientes faltosos
   const linkColumn: GridColDef = {
     field: 'link',
-    headerName: 'Link WhatsApp',
-    flex: 0.5,
-    minWidth: 200,
+    headerName: 'Texto Faltosos',
+    flex: 1,
+    minWidth: 300,
     sortable: false,
     filterable: false,
     renderCell: (params: GridRenderCellParams) => {
@@ -567,9 +565,10 @@ const PacientesFaltosos: React.FC = () => {
       const whatsappCel = params.row.WhatsAppCel || '';
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
 
-      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
       const mensagem = formatarMensagem(params.row);
-      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${mensagem}&type=phone_number&app_absent=0`;
+      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
+      const encodedMensagem = encodeURIComponent(mensagem).replace(/'/g, "%27").replace(/\*/g, "%2A");
+      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${encodedMensagem}&type=phone_number&app_absent=0`;
 
       return (
         <Tooltip title="Clique para copiar o link" arrow>
@@ -582,40 +581,26 @@ const PacientesFaltosos: React.FC = () => {
             }}
             sx={{
               width: '100%',
-              maxWidth: '100%',
+              height: '100%',
               fontFamily: 'monospace',
-              fontSize: '0.7rem',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              fontSize: '0.8rem',
+              whiteSpace: 'pre-wrap',
+              overflowY: 'auto',
               cursor: 'pointer',
-              color: '#1976d2',
+              color: 'text.primary',
               '&:hover': {
-                textDecoration: 'underline',
                 backgroundColor: '#f0f0f0',
               },
-              padding: '2px 6px',
+              padding: '8px',
               backgroundColor: '#f5f5f5',
               borderRadius: '4px',
               border: '1px solid #e0e0e0',
               display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
+              alignItems: 'flex-start',
               transition: 'background-color 0.2s',
             }}
           >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-              alt="WhatsApp"
-              style={{
-                width: '14px',
-                height: '14px',
-                flexShrink: 0
-              }}
-            />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {whatsappLink}
-            </span>
+            {mensagem}
           </Box>
         </Tooltip>
       );
