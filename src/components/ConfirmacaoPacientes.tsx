@@ -55,6 +55,11 @@ interface Paciente {
   Copiado?: boolean;
 }
 
+interface Mensagem {
+  ID: number;
+  Texto: string;
+}
+
 interface DadosFirebase {
   aEnviar: Record<string, Omit<Paciente, 'id'>>;
   erro: Record<string, Omit<Paciente, 'id'>>;
@@ -74,6 +79,10 @@ const ConfirmacaoPacientes: React.FC = () => {
   // Sub-abas Pacientes/Erros (nível 2)
   const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
 
+    const [mensagensConsulta, setMensagensConsulta] = useState<Mensagem[]>([]);
+    const [mensagensExame, setMensagensExame] = useState<Mensagem[]>([]);
+
+
   // Estado para o dialog de seleção em lote
   const [batchSelectOpen, setBatchSelectOpen] = useState(false);
   const [batchSelectType, setBatchSelectType] = useState(''); // 'data', 'medico', 'convenio'
@@ -86,6 +95,28 @@ const ConfirmacaoPacientes: React.FC = () => {
     message: '',
     severity: 'success',
   });
+
+  useEffect(() => {
+    if (database) {
+      const consultaRef = ref(database, '/OFT/45/confirmacaoPacientes/mensagens/consulta/1NI_jOTSq0J8bjLLjs0d5937T3n5iP76z19ElRHwmpNU/mensagemConsulta');
+      onValue(consultaRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const mensagensArray = Object.values(data) as Mensagem[];
+          setMensagensConsulta(mensagensArray);
+        }
+      });
+
+      const exameRef = ref(database, '/OFT/45/confirmacaoPacientes/mensagens/exame/1bIfGCXT4TKSD85qR9ZBr70ZbDuFeaIZ-vKilWQNDois/mensagemExame');
+      onValue(exameRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const mensagensArray = Object.values(data) as Mensagem[];
+          setMensagensExame(mensagensArray);
+        }
+      });
+    }
+  }, [database]);
 
   const handleSnackbarClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
@@ -301,26 +332,28 @@ const ConfirmacaoPacientes: React.FC = () => {
     const medico = paciente.Medico || 'Médico não informado';
     const convenio = paciente.Convenio || 'Convênio não informado';
 
-    let mensagem = 'Olá! Aqui é da OftalmoDay.';
-    
+    let template = '';
     if (medico.toLowerCase().includes('campo visual')) {
-      mensagem += '\n\nGostaríamos de confirmar o exame abaixo:' +
-                `\n*Paciente:* ${pacienteNome}` +
-                `\n*Data/Hora:* ${dataMarcada}` +
-                `\n*Exame:* ${medico}` +
-                `\n*Plano:* ${convenio}` +
-                `\n*Endereço:* ${endereco}`;
+        if (mensagensExame.length > 0) {
+            const randomIndex = Math.floor(Math.random() * mensagensExame.length);
+            template = mensagensExame[randomIndex].Texto;
+        }
     } else {
-      mensagem += '\n\nGostaríamos de confirmar o agendamento abaixo:' +
-                `\n*Paciente:* ${pacienteNome}` +
-                `\n*Data/Hora:* ${dataMarcada}` +
-                `\n*Médico:* ${medico}` +
-                `\n*Plano:* ${convenio}` +
-                `\n*Endereço:* ${endereco}`;
+        if (mensagensConsulta.length > 0) {
+            const randomIndex = Math.floor(Math.random() * mensagensConsulta.length);
+            template = mensagensConsulta[randomIndex].Texto;
+        }
     }
-    
-    mensagem += '\n\n*CONFIRMA*?';
-    
+
+    let mensagem = template
+        .replace(/{Paciente}/g, pacienteNome)
+        .replace(/{DataMarcada}/g, dataMarcada)
+        .replace(/{Medico}/g, medico)
+        .replace(/{Convenio}/g, convenio)
+        .replace(/{Endereco}/g, endereco)
+        .replace(/{Exame}/g, medico);
+
+
     return mensagem;
   };
 
