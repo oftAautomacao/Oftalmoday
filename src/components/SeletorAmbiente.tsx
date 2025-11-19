@@ -14,7 +14,7 @@ import {
 import SettingsIcon from '@mui/icons-material/Settings';
 import CheckIcon from '@mui/icons-material/Check';
 import ComputerIcon from '@mui/icons-material/Computer';
-import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
+// import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
 import BugReportIcon from '@mui/icons-material/BugReport';
 
 type AmbienteType = 'producao' | 'teste-b720c';
