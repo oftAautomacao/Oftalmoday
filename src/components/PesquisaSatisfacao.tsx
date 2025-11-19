@@ -593,7 +593,7 @@ const PesquisaSatisfacao: React.FC = () => {
               fontFamily: 'monospace',
               fontSize: '0.8rem',
               whiteSpace: 'pre-wrap',
-              overflowY: 'auto',
+              wordBreak: 'break-word',
               cursor: 'pointer',
               color: 'text.primary',
               '&:hover': {
@@ -603,9 +603,10 @@ const PesquisaSatisfacao: React.FC = () => {
               backgroundColor: '#f5f5f5',
               borderRadius: '4px',
               border: '1px solid #e0e0e0',
-              display: 'flex',
-              alignItems: 'flex-start',
               transition: 'background-color 0.2s',
+              boxSizing: 'border-box',
+              overflowY: 'auto',
+              overflowX: 'hidden',
             }}
           >
             {mensagem}
