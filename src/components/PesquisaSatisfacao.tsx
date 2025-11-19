@@ -331,11 +331,12 @@ const PesquisaSatisfacao: React.FC = () => {
     // Extrai data e hora da string DataMarcada
     const dataMarcada = paciente.DataMarcada.split(' ');
     const data = dataMarcada[0];
+    let mensagem: string;
 
     if (mensagensPesquisa.length > 0) {
       // Escolhe uma mensagem aleatória
       const randomIndex = Math.floor(Math.random() * mensagensPesquisa.length);
-      let mensagem = mensagensPesquisa[randomIndex].Texto;
+      mensagem = mensagensPesquisa[randomIndex].Texto;
 
       // Substitui as variáveis na mensagem
       mensagem = mensagem.replace(/{Paciente}/g, paciente.Paciente || '');
@@ -343,15 +344,19 @@ const PesquisaSatisfacao: React.FC = () => {
       mensagem = mensagem.replace(/{Medico}/g, paciente.Medico || '');
       mensagem = mensagem.replace(/{Convenio}/g, paciente.Convenio || '');
       
-      return mensagem;
+    } else {
+      // Texto principal da mensagem (fallback)
+      mensagem = `Olá!\nSomos da Clínica Oftalmo Day.`;
+      mensagem += `\n\nObrigado por escolher nosso atendimento para ${paciente.Paciente} em ${data}.`;
+      mensagem += `\n\nPara que possamos melhorar ainda mais, pedimos que clique no link abaixo, avalie-nos no Google e deixe um comentário.`;
+      mensagem += `\n\nhttps://g.page/r/CfkFYbj9RhlpEBM/review`;
+      mensagem += `\n\nObrigado e até a próxima consulta.`;
     }
 
-    // Texto principal da mensagem (fallback)
-    let mensagem = `Olá!\nSomos da Clínica Oftalmo Day.`;
-    mensagem += `\n\nObrigado por escolher nosso atendimento para ${paciente.Paciente} em ${data}.`;
-    mensagem += `\n\nPara que possamos melhorar ainda mais, pedimos que clique no link abaixo, avalie-nos no Google e deixe um comentário.`;
-    mensagem += `\n\nhttps://g.page/r/CfkFYbj9RhlpEBM/review`;
-    mensagem += `\n\nObrigado e até a próxima consulta.`;
+    // Adiciona o telefone no final
+    if (paciente.WhatsAppCel) {
+      mensagem += `\n\n${paciente.WhatsAppCel}`;
+    }
 
     // Retorna a mensagem bruta
     return mensagem;
