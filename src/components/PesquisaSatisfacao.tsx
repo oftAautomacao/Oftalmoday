@@ -623,7 +623,7 @@ const PesquisaSatisfacao: React.FC = () => {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              copiarParaAreaTransferencia(whatsappLink, params.row.id);
+              copiarParaAreaTransferencia(mensagem, params.row.id);
             }}
             sx={{
               width: '100%',
