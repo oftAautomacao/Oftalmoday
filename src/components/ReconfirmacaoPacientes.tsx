@@ -71,7 +71,7 @@ interface SnackbarState {
 }
 
 const ReconfirmacaoPacientes: React.FC = () => {
-  const { database, ambiente } = useAmbiente();
+  const { database } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
   // Filtros
@@ -565,9 +565,9 @@ const ReconfirmacaoPacientes: React.FC = () => {
 
       const mensagem = formatarMensagem(params.row);
       // O link é construído, mas usamos a mensagem de texto para exibição
-      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
-      const encodedMensagem = encodeURIComponent(mensagem).replace(/'/g, "%27").replace(/\*/g, "%2A");
-      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${encodedMensagem}&type=phone_number&app_absent=0`;
+      // const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
+      // const encodedMensagem = encodeURIComponent(mensagem).replace(/'/g, "%27").replace(/\*/g, "%2A");
+      // const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${encodedMensagem}&type=phone_number&app_absent=0`;
 
 
       return (
@@ -577,7 +577,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              copiarParaAreaTransferencia(whatsappLink, params.row.id);
+              copiarParaAreaTransferencia(mensagem, params.row.id);
             }}
             sx={{
               width: '100%',
