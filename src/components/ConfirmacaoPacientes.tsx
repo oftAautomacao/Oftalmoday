@@ -321,7 +321,7 @@ const ConfirmacaoPacientes: React.FC = () => {
     
     mensagem += '\n\n*CONFIRMA*?';
     
-    return encodeURIComponent(mensagem);
+    return mensagem;
   };
 
   // Função para copiar apenas o telefone
@@ -347,7 +347,7 @@ const ConfirmacaoPacientes: React.FC = () => {
   const copiarParaAreaTransferencia = (texto: string, pacienteId: string) => {
     // Primeiro copia para a área de transferência
     navigator.clipboard.writeText(texto).then(() => {
-      setSnackbar({ open: true, message: 'Link copiado para a área de transferência!', severity: 'success' });
+      setSnackbar({ open: true, message: 'Texto copiado para a área de transferência!', severity: 'success' });
       
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
@@ -360,73 +360,56 @@ const ConfirmacaoPacientes: React.FC = () => {
         });
       }
     }).catch((error: Error) => {
-      console.error('Erro ao copiar link:', error);
-      setSnackbar({ open: true, message: 'Erro ao copiar o link.', severity: 'error' });
+      console.error('Erro ao copiar texto:', error);
+      setSnackbar({ open: true, message: 'Erro ao copiar o texto.', severity: 'error' });
     });
   };
 
-  // Coluna de link para WhatsApp (usada apenas na aba de pacientes)
+  // Coluna de texto para confirmação (usada apenas na aba de pacientes)
   const linkColumn: GridColDef = { 
     field: 'link', 
-    headerName: 'Link WhatsApp', 
-    flex: 0.5,
-    minWidth: 200,
+    headerName: 'Texto Confirmação', 
+    flex: 1, // Aumenta o flex para dar mais espaço ao texto
+    minWidth: 300, // Aumenta a largura mínima
     sortable: false,
     filterable: false,
     renderCell: (params: GridRenderCellParams) => {
       const whatsappCel = params.row.WhatsAppCel || '';
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
       
-      // Usa o número de teste quando estiver no ambiente de teste, senão usa o número do paciente
-      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
       const mensagem = formatarMensagemConfirmacao(params.row);
-      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${mensagem}&type=phone_number&app_absent=0`;
       
       return (
-        <Tooltip title="Clique para copiar o link" arrow>
+        <Tooltip title="Clique para copiar o texto" arrow>
           <Box 
             component="div"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              copiarParaAreaTransferencia(whatsappLink, params.row.id);
+              copiarParaAreaTransferencia(mensagem, params.row.id);
             }}
             sx={{
               width: '100%',
-              maxWidth: '100%',
+              height: '100%',
               fontFamily: 'monospace',
-              fontSize: '0.7rem',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              fontSize: '0.8rem',
+              whiteSpace: 'pre-wrap', // Permite quebras de linha
+              overflowY: 'auto', // Adiciona scroll se o texto for muito grande
               cursor: 'pointer',
-              color: '#1976d2',
+              color: 'text.primary',
               '&:hover': {
-                textDecoration: 'underline',
                 backgroundColor: '#f0f0f0',
               },
-              padding: '2px 6px',
+              padding: '8px',
               backgroundColor: '#f5f5f5',
               borderRadius: '4px',
               border: '1px solid #e0e0e0',
               display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
+              alignItems: 'flex-start', // Alinha no topo
               transition: 'background-color 0.2s',
             }}
           >
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
-              alt="WhatsApp" 
-              style={{ 
-                width: '14px', 
-                height: '14px',
-                flexShrink: 0
-              }} 
-            />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {whatsappLink}
-            </span>
+            {mensagem}
           </Box>
         </Tooltip>
       );
