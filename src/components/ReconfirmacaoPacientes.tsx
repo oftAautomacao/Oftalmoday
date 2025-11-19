@@ -275,7 +275,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     navigator.clipboard.writeText(texto).then(() => {
       setSnackbar({
         open: true,
-        message: 'Link copiado para a área de transferência!',
+        message: 'Texto copiado para a área de transferência!',
         severity: 'success'
       });
 

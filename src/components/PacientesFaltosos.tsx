@@ -71,7 +71,7 @@ interface SnackbarState {
 }
 
 const PacientesFaltosos: React.FC = () => {
-  const { database, ambiente } = useAmbiente();
+  const { database } = useAmbiente();
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
   // Filtros
@@ -275,7 +275,7 @@ const PacientesFaltosos: React.FC = () => {
     navigator.clipboard.writeText(texto).then(() => {
       setSnackbar({
         open: true,
-        message: 'Link copiado para a área de transferência!',
+        message: 'Texto copiado para a área de transferência!',
         severity: 'success'
       });
 
@@ -571,9 +571,9 @@ const PacientesFaltosos: React.FC = () => {
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
 
       const mensagem = formatarMensagem(params.row);
-      const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
-      const encodedMensagem = encodeURIComponent(mensagem).replace(/'/g, "%27").replace(/\*/g, "%2A");
-      const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${encodedMensagem}&type=phone_number&app_absent=0`;
+      // const numeroParaEnvio = ambiente === 'teste' ? '21972555867' : whatsappCel.replace(/\D/g, '').replace(/^55/, '');
+      // const encodedMensagem = encodeURIComponent(mensagem).replace(/'/g, "%27").replace(/\*/g, "%2A");
+      // const whatsappLink = `https://api.whatsapp.com/send/?phone=55${numeroParaEnvio}&text=${encodedMensagem}&type=phone_number&app_absent=0`;
 
       return (
         <Tooltip title="Clique para copiar o link" arrow>
