@@ -17,7 +17,7 @@ import ComputerIcon from '@mui/icons-material/Computer';
 // import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
 import BugReportIcon from '@mui/icons-material/BugReport';
 
-type AmbienteType = 'producao' | 'teste-b720c';
+type AmbienteType = 'producao' | 'teste';
 
 const SeletorAmbiente: React.FC = () => {
   const { ambiente, atualizarAmbiente, carregando } = useAmbiente();
@@ -44,8 +44,8 @@ const SeletorAmbiente: React.FC = () => {
       case 'producao':
         return 'Produção';
 
-      case 'teste-b720c':
-        return 'Teste B720C';
+      case 'teste':
+        return 'Teste';
       default:
         return 'Desconhecido';
     }
@@ -117,15 +117,15 @@ const SeletorAmbiente: React.FC = () => {
 
 
         <MenuItem 
-          onClick={() => handleSelectAmbiente('teste-b720c')}
-          selected={ambiente === 'teste-b720c'}
+          onClick={() => handleSelectAmbiente('teste')}
+          selected={ambiente === 'teste'}
           sx={{ minWidth: '180px' }}
         >
           <ListItemIcon>
-            <BugReportIcon color={ambiente === 'teste-b720c' ? 'error' : 'inherit'} />
+            <BugReportIcon color={ambiente === 'teste' ? 'error' : 'inherit'} />
           </ListItemIcon>
-          <ListItemText>Teste B720C</ListItemText>
-          {ambiente === 'teste-b720c' && <CheckIcon color="error" fontSize="small" />}
+          <ListItemText>Teste</ListItemText>
+          {ambiente === 'teste' && <CheckIcon color="error" fontSize="small" />}
         </MenuItem>
       </Menu>
     </Box>

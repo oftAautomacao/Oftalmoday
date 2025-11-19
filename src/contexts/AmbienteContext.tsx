@@ -3,7 +3,7 @@ import { Database, getDatabase } from 'firebase/database';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfigs } from '../firebase/config';
 
-type Ambiente = 'producao' | 'teste-b720c';
+type Ambiente = 'producao' | 'teste';
 
 interface AmbienteContextData {
   ambiente: Ambiente;
@@ -89,7 +89,7 @@ export const AmbienteProvider: React.FC<{ children: ReactNode }> = ({ children }
       try {
         setCarregando(true);
         const ambienteSalvo = localStorage.getItem('ambiente') as Ambiente | null;
-        const ambienteInicial = (ambienteSalvo && (ambienteSalvo === 'producao' || ambienteSalvo === 'teste-b720c')) 
+        const ambienteInicial = (ambienteSalvo && (ambienteSalvo === 'producao' || ambienteSalvo === 'teste')) 
           ? ambienteSalvo 
           : 'producao';
         
