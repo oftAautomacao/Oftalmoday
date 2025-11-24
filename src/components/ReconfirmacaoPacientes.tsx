@@ -301,10 +301,18 @@ const ReconfirmacaoPacientes: React.FC = () => {
 
   // Formata mensagem do WhatsApp
   const formatarMensagem = useCallback((paciente: Paciente) => {
-    // Extrai data e hora da string DataMarcada
-    const dataMarcada = paciente.DataMarcada.split(' ');
-    const data = dataMarcada[0];
-    const hora = dataMarcada[1]; // Pega a hora diretamente do segundo elemento
+    const dataMarcadaString = paciente.DataMarcada || '';
+    
+    // Separa a string em partes, removendo espaços em branco extras
+    const parts = dataMarcadaString.split(' ').filter(part => part.trim() !== '');
+    
+    const data = parts[0] || '';
+    let hora = parts.length > 1 ? parts.slice(1).join(' ') : '';
+
+    // Se a hora estiver faltando, usa um placeholder.
+    if (!hora) {
+      hora = '[horário não informado]';
+    }
 
     // Texto principal da mensagem
     let mensagem = "*Olá, bom dia!* \n*Somos da clínica Oftalmo Day!*";
