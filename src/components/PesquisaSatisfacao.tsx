@@ -91,7 +91,7 @@ const PesquisaSatisfacao: React.FC = () => {
     message: '',
     severity: 'info',
   });
-  const [selectedRows, setSelectedRows] = useState<{[key: string]: boolean}>({});
+  const [selectedRows, setSelectedRows] = useState<{ [key: string]: boolean }>({});
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
     pageSize: 100,
@@ -282,7 +282,7 @@ const PesquisaSatisfacao: React.FC = () => {
     const numeroLimpo = String(telefone).replace(/\D/g, '');
     navigator.clipboard.writeText(numeroLimpo).then(() => {
       setSnackbar({ open: true, message: 'Telefone copiado!', severity: 'success' });
-      
+
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         const pacienteRef = ref(database, `/OFT/45/pesquisaSatisfacao/site/aEnviar/${pacienteId}`);
@@ -343,7 +343,7 @@ const PesquisaSatisfacao: React.FC = () => {
       mensagem = mensagem.replace(/{DataMarcada}/g, paciente.DataMarcada || '');
       mensagem = mensagem.replace(/{Medico}/g, paciente.Medico || '');
       mensagem = mensagem.replace(/{Convenio}/g, paciente.Convenio || '');
-      
+
     } else {
       // Texto principal da mensagem (fallback)
       mensagem = `Olá!\nSomos da Clínica Oftalmo Day.`;
@@ -719,11 +719,11 @@ const PesquisaSatisfacao: React.FC = () => {
 
           return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-              <a 
-                href={whatsappLink} 
-                target="_blank" 
+              <a
+                href={whatsappLink}
+                target="_blank"
                 rel="noopener noreferrer"
-                style={{ 
+                style={{
                   textDecoration: 'none',
                   color: '#1976d2',
                   display: 'flex',
@@ -733,9 +733,9 @@ const PesquisaSatisfacao: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
-                  alt="WhatsApp" 
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                  alt="WhatsApp"
                   style={{ width: '14px', height: '14px', flexShrink: 0 }}
                 />
                 {numeroExibicao}
@@ -761,7 +761,7 @@ const PesquisaSatisfacao: React.FC = () => {
           const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
           return renderTelefone(whatsappCel);
         }
-        
+
         // Para a sub-aba de Erros, mostra todos os telefones
         const telefones = [
           params.row.Telefone,
@@ -770,9 +770,9 @@ const PesquisaSatisfacao: React.FC = () => {
           params.row.TelefoneRes,
           params.row.WhatsAppCel,
         ].filter(tel => tel && tel.trim() !== '');
-        
+
         if (telefones.length === 0) return 'Não informado';
-        
+
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
             {telefones.map((tel, index) => (
@@ -796,16 +796,24 @@ const PesquisaSatisfacao: React.FC = () => {
   const rowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
       if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
-      const [dataStr, horaStr] = String(dm).split(' ');
+
+      // Usa regex para dividir por qualquer quantidade de espaços em branco
+      const parts = String(dm).trim().split(/\s+/);
+      const dataStr = parts[0];
+      const horaStr = parts.length > 1 ? parts[1] : '';
+
       if (!dataStr || dataStr === 'Não agendado' || dataStr === 'Sem Data') return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
+
       const [diaS, mesS, anoS] = dataStr.split('/').map(Number);
       const d = Number(diaS), m = Number(mesS), y = Number(anoS);
+
       let hh = 0, mm = 0;
       if (horaStr) {
         const [hhS, mmS] = horaStr.split(':');
         hh = Number(hhS) || 0;
         mm = Number(mmS) || 0;
       }
+
       if (!y || !m || !d) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
       return { y, m, d, hh, mm, valid: true };
     };
@@ -993,8 +1001,8 @@ const PesquisaSatisfacao: React.FC = () => {
               setFiltroMedico([]);
               setFiltroConvenio([]);
             }}>Limpar</Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="small"
               onClick={() => {
                 setBatchSelectType('');

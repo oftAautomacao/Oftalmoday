@@ -86,7 +86,7 @@ const PacientesFaltosos: React.FC = () => {
     message: '',
     severity: 'info',
   });
-  const [selectedRows, setSelectedRows] = useState<{[key: string]: boolean}>({});
+  const [selectedRows, setSelectedRows] = useState<{ [key: string]: boolean }>({});
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
     pageSize: 100,
@@ -121,22 +121,22 @@ const PacientesFaltosos: React.FC = () => {
     }
 
     if (!search) {
-      return { 
-        pacientesFiltrados: listaPacientes, 
-        errosFiltrados: listaErros 
+      return {
+        pacientesFiltrados: listaPacientes,
+        errosFiltrados: listaErros
       };
     }
 
     const searchNormalized = normalizeMessage(search);
 
-    const pacientesFiltrados = listaPacientes.filter(paciente => 
+    const pacientesFiltrados = listaPacientes.filter(paciente =>
       Object.entries(paciente).some(([key, value]) => {
         if (['id', 'tipo', 'IDMarcacao'].includes(key)) return false;
         return normalizeMessage(String(value)).includes(searchNormalized);
       })
     );
 
-    const errosFiltrados = listaErros.filter(erro => 
+    const errosFiltrados = listaErros.filter(erro =>
       Object.entries(erro).some(([key, value]) => {
         if (['id', 'tipo'].includes(key)) return false;
         return normalizeMessage(String(value)).includes(searchNormalized);
@@ -229,7 +229,7 @@ const PacientesFaltosos: React.FC = () => {
   // Efeito para sincronizar o estado dos checkboxes com o campo 'Copiado' dos dados
   useEffect(() => {
     if (dados.aEnviar) {
-      const novosSelecionados: {[key: string]: boolean} = {};
+      const novosSelecionados: { [key: string]: boolean } = {};
 
       // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
       Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
@@ -255,7 +255,7 @@ const PacientesFaltosos: React.FC = () => {
     const numeroLimpo = String(telefone).replace(/\D/g, '');
     navigator.clipboard.writeText(numeroLimpo).then(() => {
       setSnackbar({ open: true, message: 'Telefone copiado!', severity: 'success' });
-      
+
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         const pacienteRef = ref(database, `/OFT/45/pacientesFaltosos/site/aEnviar/${pacienteId}`);
@@ -307,9 +307,9 @@ const PacientesFaltosos: React.FC = () => {
     const hora = dataMarcada[2]; // Pega a hora diretamente do segundo elemento
 
     // Texto principal da mensagem
-     let mensagem = `Olá!\nAqui é da Oftalmo Day.`
+    let mensagem = `Olá!\nAqui é da Oftalmo Day.`
 
-      mensagem +=`\nVimos que não pôde comparecer à consulta agendada em ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}. 
+    mensagem += `\nVimos que não pôde comparecer à consulta agendada em ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}. 
       \nGostaria de reagendar? 😊`;
 
     const telefone = paciente.WhatsAppCel || paciente.TelefoneCel || paciente.TelefoneRes || paciente.TelefoneCom || paciente.Telefone || '';
@@ -677,11 +677,11 @@ const PacientesFaltosos: React.FC = () => {
 
           return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-              <a 
-                href={whatsappLink} 
-                target="_blank" 
+              <a
+                href={whatsappLink}
+                target="_blank"
                 rel="noopener noreferrer"
-                style={{ 
+                style={{
                   textDecoration: 'none',
                   color: '#1976d2',
                   display: 'flex',
@@ -691,9 +691,9 @@ const PacientesFaltosos: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
-                  alt="WhatsApp" 
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                  alt="WhatsApp"
                   style={{ width: '14px', height: '14px', flexShrink: 0 }}
                 />
                 {numeroExibicao}
@@ -719,7 +719,7 @@ const PacientesFaltosos: React.FC = () => {
           const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
           return renderTelefone(whatsappCel);
         }
-        
+
         // Para a sub-aba de Erros, mostra todos os telefones
         const telefones = [
           params.row.Telefone,
@@ -728,9 +728,9 @@ const PacientesFaltosos: React.FC = () => {
           params.row.TelefoneRes,
           params.row.WhatsAppCel,
         ].filter(tel => tel && tel.trim() !== '');
-        
+
         if (telefones.length === 0) return 'Não informado';
-        
+
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
             {telefones.map((tel, index) => (
@@ -754,16 +754,24 @@ const PacientesFaltosos: React.FC = () => {
   const rowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
       if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
-      const [dataStr, horaStr] = String(dm).split(' ');
+
+      // Usa regex para dividir por qualquer quantidade de espaços em branco
+      const parts = String(dm).trim().split(/\s+/);
+      const dataStr = parts[0];
+      const horaStr = parts.length > 1 ? parts[1] : '';
+
       if (!dataStr || dataStr === 'Não agendado' || dataStr === 'Sem Data') return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
+
       const [diaS, mesS, anoS] = dataStr.split('/').map(Number);
       const d = Number(diaS), m = Number(mesS), y = Number(anoS);
+
       let hh = 0, mm = 0;
       if (horaStr) {
         const [hhS, mmS] = horaStr.split(':');
         hh = Number(hhS) || 0;
         mm = Number(mmS) || 0;
       }
+
       if (!y || !m || !d) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
       return { y, m, d, hh, mm, valid: true };
     };
@@ -951,8 +959,8 @@ const PacientesFaltosos: React.FC = () => {
               setFiltroMedico([]);
               setFiltroConvenio([]);
             }}>Limpar</Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="small"
               onClick={() => {
                 setBatchSelectType('');

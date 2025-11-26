@@ -86,7 +86,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     message: '',
     severity: 'info',
   });
-  const [selectedRows, setSelectedRows] = useState<{[key: string]: boolean}>({});
+  const [selectedRows, setSelectedRows] = useState<{ [key: string]: boolean }>({});
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
     pageSize: 100,
@@ -121,22 +121,22 @@ const ReconfirmacaoPacientes: React.FC = () => {
     }
 
     if (!search) {
-      return { 
-        pacientesFiltrados: listaPacientes, 
-        errosFiltrados: listaErros 
+      return {
+        pacientesFiltrados: listaPacientes,
+        errosFiltrados: listaErros
       };
     }
 
     const searchNormalized = normalizeMessage(search);
 
-    const pacientesFiltrados = listaPacientes.filter(paciente => 
+    const pacientesFiltrados = listaPacientes.filter(paciente =>
       Object.entries(paciente).some(([key, value]) => {
         if (['id', 'tipo', 'IDMarcacao'].includes(key)) return false;
         return normalizeMessage(String(value)).includes(searchNormalized);
       })
     );
 
-    const errosFiltrados = listaErros.filter(erro => 
+    const errosFiltrados = listaErros.filter(erro =>
       Object.entries(erro).some(([key, value]) => {
         if (['id', 'tipo'].includes(key)) return false;
         return normalizeMessage(String(value)).includes(searchNormalized);
@@ -229,7 +229,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
   // Efeito para sincronizar o estado dos checkboxes com o campo 'Copiado' dos dados
   useEffect(() => {
     if (dados.aEnviar) {
-      const novosSelecionados: {[key: string]: boolean} = {};
+      const novosSelecionados: { [key: string]: boolean } = {};
 
       // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
       Object.entries(dados.aEnviar).forEach(([id, paciente]: [string, Omit<Paciente, 'id'>]) => {
@@ -255,7 +255,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     const numeroLimpo = String(telefone).replace(/\D/g, '');
     navigator.clipboard.writeText(numeroLimpo).then(() => {
       setSnackbar({ open: true, message: 'Telefone copiado!', severity: 'success' });
-      
+
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         const pacienteRef = ref(database, `/OFT/45/reconfirmacaoPacientes/site/aEnviar/${pacienteId}`);
@@ -302,10 +302,10 @@ const ReconfirmacaoPacientes: React.FC = () => {
   // Formata mensagem do WhatsApp
   const formatarMensagem = useCallback((paciente: Paciente) => {
     const dataMarcadaString = paciente.DataMarcada || '';
-    
+
     // Separa a string em partes, removendo espaços em branco extras
     const parts = dataMarcadaString.split(' ').filter(part => part.trim() !== '');
-    
+
     const data = parts[0] || '';
     let hora = parts.length > 1 ? parts.slice(1).join(' ') : '';
 
@@ -320,13 +320,13 @@ const ReconfirmacaoPacientes: React.FC = () => {
     // Verifica se o médico é "Campo Visual"
     if (paciente.Medico === "Campo Visual") {
       mensagem += "\nPassando para lembrar do exame do paciente " +
-                paciente.Paciente + " para *HOJE*, dia " +
-                data + " às " + hora;
+        paciente.Paciente + " para *HOJE*, dia " +
+        data + " às " + hora;
     } else {
       // Formato padrão para outros médicos
       mensagem += "\nPassando para lembrar do agendamento do paciente " +
-                paciente.Paciente + " para *HOJE*, dia " +
-                data + " às " + hora + " com o(a) Dr(a) " + paciente.Medico + ".";
+        paciente.Paciente + " para *HOJE*, dia " +
+        data + " às " + hora + " com o(a) Dr(a) " + paciente.Medico + ".";
     }
 
     // Adiciona o complemento da mensagem
@@ -335,7 +335,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     //            "Se a solicitação for feita posteriormente, o prazo para entrega será de até 24 horas.";
 
     mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção. " +
-    "Pedidos posteriores: prazo até 48h e retirada apenas na recepção";
+      "Pedidos posteriores: prazo até 48h e retirada apenas na recepção";
 
     const telefone = paciente.WhatsAppCel || paciente.TelefoneCel || paciente.TelefoneRes || paciente.TelefoneCom || paciente.Telefone || '';
     if (telefone) {
@@ -680,11 +680,11 @@ const ReconfirmacaoPacientes: React.FC = () => {
 
           return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-              <a 
-                href={whatsappLink} 
-                target="_blank" 
+              <a
+                href={whatsappLink}
+                target="_blank"
                 rel="noopener noreferrer"
-                style={{ 
+                style={{
                   textDecoration: 'none',
                   color: '#1976d2',
                   display: 'flex',
@@ -694,9 +694,9 @@ const ReconfirmacaoPacientes: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
-                  alt="WhatsApp" 
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                  alt="WhatsApp"
                   style={{ width: '14px', height: '14px', flexShrink: 0 }}
                 />
                 {numeroExibicao}
@@ -722,7 +722,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
           const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
           return renderTelefone(whatsappCel);
         }
-        
+
         // Para a sub-aba de Erros, mostra todos os telefones
         const telefones = [
           params.row.Telefone,
@@ -731,9 +731,9 @@ const ReconfirmacaoPacientes: React.FC = () => {
           params.row.TelefoneRes,
           params.row.WhatsAppCel,
         ].filter(tel => tel && tel.trim() !== '');
-        
+
         if (telefones.length === 0) return 'Não informado';
-        
+
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
             {telefones.map((tel, index) => (
@@ -779,16 +779,24 @@ const ReconfirmacaoPacientes: React.FC = () => {
   const rowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
       if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
-      const [dataStr, horaStr] = String(dm).split(' ');
+
+      // Usa regex para dividir por qualquer quantidade de espaços em branco
+      const parts = String(dm).trim().split(/\s+/);
+      const dataStr = parts[0];
+      const horaStr = parts.length > 1 ? parts[1] : '';
+
       if (!dataStr || dataStr === 'Não agendado' || dataStr === 'Sem Data') return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
+
       const [diaS, mesS, anoS] = dataStr.split('/').map(Number);
       const d = Number(diaS), m = Number(mesS), y = Number(anoS);
+
       let hh = 0, mm = 0;
       if (horaStr) {
         const [hhS, mmS] = horaStr.split(':');
         hh = Number(hhS) || 0;
         mm = Number(mmS) || 0;
       }
+
       if (!y || !m || !d) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
       return { y, m, d, hh, mm, valid: true };
     };
@@ -976,8 +984,8 @@ const ReconfirmacaoPacientes: React.FC = () => {
               setFiltroMedico([]);
               setFiltroConvenio([]);
             }}>Limpar</Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="small"
               onClick={() => setBatchSelectOpen(true)}
               sx={{ backgroundColor: '#ffc107', color: 'black', '&:hover': { backgroundColor: '#ffa000' } }}

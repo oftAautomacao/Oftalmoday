@@ -842,16 +842,24 @@ const ConfirmacaoPacientes: React.FC = () => {
   const rowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
       if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
-      const [dataStr, horaStr] = String(dm).split(' ');
+      
+      // Usa regex para dividir por qualquer quantidade de espaços em branco
+      const parts = String(dm).trim().split(/\s+/);
+      const dataStr = parts[0];
+      const horaStr = parts.length > 1 ? parts[1] : '';
+
       if (!dataStr || dataStr === 'Não agendado' || dataStr === 'Sem Data') return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
+      
       const [diaS, mesS, anoS] = dataStr.split('/').map(Number);
       const d = Number(diaS), m = Number(mesS), y = Number(anoS);
+      
       let hh = 0, mm = 0;
       if (horaStr) {
         const [hhS, mmS] = horaStr.split(':');
         hh = Number(hhS) || 0;
         mm = Number(mmS) || 0;
       }
+      
       if (!y || !m || !d) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
       return { y, m, d, hh, mm, valid: true };
     };
