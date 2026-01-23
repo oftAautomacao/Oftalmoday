@@ -901,6 +901,7 @@ const PesquisaSatisfacao: React.FC = () => {
               value={filtroDataExistente}
               onChange={(e) => setFiltroDataExistente(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
               renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
             >
               {datasOrdenadas.map((d) => (
                 <MenuItem
@@ -929,6 +930,7 @@ const PesquisaSatisfacao: React.FC = () => {
               value={filtroMedico}
               onChange={(e) => setFiltroMedico(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
               renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
             >
               {medicosUnicos.map((m) => (
                 <MenuItem
@@ -953,6 +955,7 @@ const PesquisaSatisfacao: React.FC = () => {
               value={filtroConvenio}
               onChange={(e) => setFiltroConvenio(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
               renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
             >
               {conveniosUnicos.map((c) => (
                 <MenuItem
@@ -1266,6 +1269,7 @@ const PesquisaSatisfacao: React.FC = () => {
                 label="Valor"
                 value={batchSelectValue}
                 onChange={(e) => setBatchSelectValue(e.target.value)}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
               >
                 {batchSelectType === 'data' && datasOrdenadas.map(d => (
                   <MenuItem key={d} value={d}>{d}</MenuItem>

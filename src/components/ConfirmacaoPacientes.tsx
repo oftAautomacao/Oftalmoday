@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ref, onValue, update } from 'firebase/database';
 import { useAmbiente } from '../contexts/AmbienteContext';
 import { normalizeMessage } from '../utils/normalizeMessage';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  TextField, 
-  IconButton, 
-  Tooltip, 
+import {
+  Box,
+  Typography,
+  Paper,
+  TextField,
+  IconButton,
+  Tooltip,
   Stack,
   Snackbar,
   Alert as MuiAlert,
@@ -79,8 +79,8 @@ const ConfirmacaoPacientes: React.FC = () => {
   // Sub-abas Pacientes/Erros (nível 2)
   const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
 
-    const [mensagensConsulta, setMensagensConsulta] = useState<Mensagem[]>([]);
-    const [mensagensExame, setMensagensExame] = useState<Mensagem[]>([]);
+  const [mensagensConsulta, setMensagensConsulta] = useState<Mensagem[]>([]);
+  const [mensagensExame, setMensagensExame] = useState<Mensagem[]>([]);
 
 
   // Estado para o dialog de seleção em lote
@@ -128,7 +128,7 @@ const ConfirmacaoPacientes: React.FC = () => {
   // Prepara os dados para exibição
   const { pacientesFiltrados, errosFiltrados } = useMemo(() => {
     console.log('Processando dados do Firebase:', dados);
-    
+
     // Converte os objetos para arrays e adiciona o ID
     const listaPacientes = Object.entries(dados.aEnviar || {}).map(([id, paciente]) => ({
       ...paciente,
@@ -151,22 +151,22 @@ const ConfirmacaoPacientes: React.FC = () => {
         }
       }
     }
-    
+
     console.log('Pacientes processados:', listaPacientes);
     console.log('Erros processados:', listaErros);
 
     // Aplica a busca se houver termo de busca
     if (!search) {
-      return { 
-        pacientesFiltrados: listaPacientes, 
-        errosFiltrados: listaErros 
+      return {
+        pacientesFiltrados: listaPacientes,
+        errosFiltrados: listaErros
       };
     }
 
     const searchNormalized = normalizeMessage(search);
 
     // Filtra pacientes
-    const pacientesFiltrados = listaPacientes.filter(paciente => 
+    const pacientesFiltrados = listaPacientes.filter(paciente =>
       Object.entries(paciente).some(([key, value]) => {
         if (['id', 'tipo', 'IDMarcacao'].includes(key)) return false;
         return normalizeMessage(String(value)).includes(searchNormalized);
@@ -174,7 +174,7 @@ const ConfirmacaoPacientes: React.FC = () => {
     );
 
     // Filtra erros
-    const errosFiltrados = listaErros.filter(erro => 
+    const errosFiltrados = listaErros.filter(erro =>
       Object.entries(erro).some(([key, value]) => {
         if (['id', 'tipo'].includes(key)) return false;
         return normalizeMessage(String(value)).includes(searchNormalized);
@@ -220,23 +220,23 @@ const ConfirmacaoPacientes: React.FC = () => {
       setError('Banco de dados não está disponível');
       return;
     }
-    
+
     console.log('Iniciando carregamento de dados...');
     setLoading(true);
     setError(null);
-    
+
     const path = '/OFT/45/confirmacaoPacientes/site';
     const rootRef = ref(database, path);
-    
+
     console.log(`Caminho de referência: ${path}`);
     console.log('Database config:', {
       app: database.app.name,
       databaseUrl: database.app.options.databaseURL
     });
-    
+
     // Força o modo de depuração
     console.log('Modo de depuração ativado para verificar os dados do Firebase');
-    
+
     try {
       console.log('Registrando listener no caminho...');
       const unsubscribe = onValue(rootRef, (snapshot) => {
@@ -244,24 +244,24 @@ const ConfirmacaoPacientes: React.FC = () => {
           console.log('Dados recebidos do Firebase:', snapshot.exists() ? 'existem' : 'não existem');
           const data = snapshot.val() as DadosFirebase | null;
           console.log('Dados processados:', JSON.stringify(data, null, 2));
-          
+
           if (data) {
             console.log(`Encontrados ${Object.keys(data.aEnviar || {}).length} pacientes a enviar`);
             console.log('Chaves de pacientes:', Object.keys(data.aEnviar || {}));
             console.log(`Encontrados ${Object.keys(data.erro || {}).length} erros de confirmação`);
             console.log('Chaves de erros:', Object.keys(data.erro || {}));
-            
+
             // Verifica se há erros e loga o primeiro para depuração
             if (data.erro && Object.keys(data.erro).length > 0) {
               const primeiroErroId = Object.keys(data.erro)[0];
               console.log('Exemplo de erro:', primeiroErroId, data.erro[primeiroErroId as keyof typeof data.erro]);
             }
-            
+
             setDados({
               aEnviar: data.aEnviar || {},
               erro: data.erro || {}
             });
-            
+
             setLastUpdated(new Date());
           } else {
             console.log('Nenhum dado encontrado no caminho especificado');
@@ -278,7 +278,7 @@ const ConfirmacaoPacientes: React.FC = () => {
         setError('Erro ao conectar ao banco de dados. Verifique sua conexão.');
         setLoading(false);
       });
-      
+
       return () => {
         // Limpa o listener quando o componente for desmontado
         unsubscribe();
@@ -294,15 +294,15 @@ const ConfirmacaoPacientes: React.FC = () => {
   // Efeito para sincronizar o estado dos checkboxes com o campo 'copiado' dos dados
   useEffect(() => {
     if (dados.aEnviar) {
-      const novosSelecionados: {[key: string]: boolean} = {};
-      
+      const novosSelecionados: { [key: string]: boolean } = {};
+
       // Itera sobre os pacientes e verifica se o campo 'Copiado' está como true
       Object.entries(dados.aEnviar).forEach(([id, paciente]) => {
         if (paciente.Copiado === true) {
           novosSelecionados[id] = true;
         }
       });
-      
+
       setSelectedRows(novosSelecionados);
     }
   }, [dados]);
@@ -314,9 +314,9 @@ const ConfirmacaoPacientes: React.FC = () => {
       setLoading(false);
       return;
     }
-    
+
     const unsubscribe = carregarDados();
-    
+
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -334,24 +334,24 @@ const ConfirmacaoPacientes: React.FC = () => {
 
     let template = '';
     if (medico.toLowerCase().includes('campo visual')) {
-        if (mensagensExame.length > 0) {
-            const randomIndex = Math.floor(Math.random() * mensagensExame.length);
-            template = mensagensExame[randomIndex].Texto;
-        }
+      if (mensagensExame.length > 0) {
+        const randomIndex = Math.floor(Math.random() * mensagensExame.length);
+        template = mensagensExame[randomIndex].Texto;
+      }
     } else {
-        if (mensagensConsulta.length > 0) {
-            const randomIndex = Math.floor(Math.random() * mensagensConsulta.length);
-            template = mensagensConsulta[randomIndex].Texto;
-        }
+      if (mensagensConsulta.length > 0) {
+        const randomIndex = Math.floor(Math.random() * mensagensConsulta.length);
+        template = mensagensConsulta[randomIndex].Texto;
+      }
     }
 
     let mensagem = template
-        .replace(/{Paciente}/g, pacienteNome)
-        .replace(/{DataMarcada}/g, dataMarcada)
-        .replace(/{Medico}/g, medico)
-        .replace(/{Convenio}/g, convenio)
-        .replace(/{Endereco}/g, endereco)
-        .replace(/{Exame}/g, medico);
+      .replace(/{Paciente}/g, pacienteNome)
+      .replace(/{DataMarcada}/g, dataMarcada)
+      .replace(/{Medico}/g, medico)
+      .replace(/{Convenio}/g, convenio)
+      .replace(/{Endereco}/g, endereco)
+      .replace(/{Exame}/g, medico);
 
     const telefone = (paciente as any).WhatsAppCel || (paciente as any).whatsappcel || (paciente as any).whatsAppCel || '';
     if (telefone) {
@@ -366,7 +366,7 @@ const ConfirmacaoPacientes: React.FC = () => {
     const numeroLimpo = String(telefone).replace(/\D/g, '');
     navigator.clipboard.writeText(numeroLimpo).then(() => {
       setSnackbar({ open: true, message: 'Telefone copiado!', severity: 'success' });
-      
+
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         const pacienteRef = ref(database, `/OFT/45/confirmacaoPacientes/site/aEnviar/${pacienteId}`);
@@ -385,12 +385,12 @@ const ConfirmacaoPacientes: React.FC = () => {
     // Primeiro copia para a área de transferência
     navigator.clipboard.writeText(texto).then(() => {
       setSnackbar({ open: true, message: 'Texto copiado para a área de transferência!', severity: 'success' });
-      
+
       // Atualiza o banco de dados para marcar como copiado
       if (database) {
         // Atualiza apenas o campo Copiado sem modificar outros campos
         const pacienteRef = ref(database, `/OFT/45/confirmacaoPacientes/site/aEnviar/${pacienteId}`);
-        
+
         // Atualiza apenas o campo Copiado
         update(pacienteRef, { Copiado: true }).catch((error: Error) => {
           console.error('Erro ao atualizar status de cópia no banco de dados:', error);
@@ -403,9 +403,9 @@ const ConfirmacaoPacientes: React.FC = () => {
   };
 
   // Coluna de texto para confirmação (usada apenas na aba de pacientes)
-  const linkColumn: GridColDef = { 
-    field: 'link', 
-    headerName: 'Texto Confirmação', 
+  const linkColumn: GridColDef = {
+    field: 'link',
+    headerName: 'Texto Confirmação',
     flex: 1, // Aumenta o flex para dar mais espaço ao texto
     minWidth: 300, // Aumenta a largura mínima
     sortable: false,
@@ -413,12 +413,12 @@ const ConfirmacaoPacientes: React.FC = () => {
     renderCell: (params: GridRenderCellParams) => {
       const whatsappCel = params.row.WhatsAppCel || '';
       if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
-      
+
       const mensagem = formatarMensagemConfirmacao(params.row);
-      
+
       return (
         <Tooltip title="Clique para copiar o texto" arrow>
-          <Box 
+          <Box
             component="div"
             onClick={(e) => {
               e.preventDefault();
@@ -462,23 +462,23 @@ const ConfirmacaoPacientes: React.FC = () => {
   });
 
   // Estado para controlar os checkboxes
-  const [selectedRows, setSelectedRows] = React.useState<{[key: string]: boolean}>({});
+  const [selectedRows, setSelectedRows] = React.useState<{ [key: string]: boolean }>({});
 
   // Função para alternar o estado do checkbox e atualizar o Firebase
   const toggleRowSelection = (rowId: string) => {
     const novoEstado = !selectedRows[rowId];
-    
+
     // Atualiza o estado local
     setSelectedRows(prev => ({
       ...prev,
       [rowId]: novoEstado
     }));
-    
+
     // Atualiza o Firebase
     if (database) {
       const updates: Record<string, boolean | null> = {};
       const caminho = `/OFT/45/confirmacaoPacientes/site/aEnviar/${rowId}/Copiado`;
-      
+
       if (novoEstado) {
         // Se estiver marcando, adiciona o campo copiado: true
         updates[caminho] = true;
@@ -486,7 +486,7 @@ const ConfirmacaoPacientes: React.FC = () => {
         // Se estiver desmarcando, define como null para remover o campo
         updates[caminho] = null;
       }
-      
+
       update(ref(database), updates).catch(error => {
         console.error('Erro ao atualizar status de cópia no banco de dados:', error);
         // Reverte o estado em caso de erro
@@ -595,10 +595,10 @@ const ConfirmacaoPacientes: React.FC = () => {
     renderCell: (params: GridRenderCellParams) => {
       const value = isNaN(Number(params.value)) ? 0 : Number(params.value);
       const rowId = params.row.id;
-      
+
       return (
-        <Box sx={{ 
-          display: 'flex', 
+        <Box sx={{
+          display: 'flex',
           alignItems: 'center',
           gap: '8px',
           width: '100%',
@@ -607,14 +607,14 @@ const ConfirmacaoPacientes: React.FC = () => {
           pl: 1,
           position: 'relative'
         }}>
-          <span style={{ 
-            minWidth: '20px', 
+          <span style={{
+            minWidth: '20px',
             textAlign: 'right',
             fontFamily: 'monospace'
           }}>
             {value}
           </span>
-          <Box 
+          <Box
             component="div"
             sx={{
               position: 'relative',
@@ -680,10 +680,10 @@ const ConfirmacaoPacientes: React.FC = () => {
 
   // Colunas comuns entre as abas
   const commonColumns: GridColDef[] = [
-    { 
-      field: 'Paciente', 
-      headerName: 'Paciente', 
-      flex: 1, 
+    {
+      field: 'Paciente',
+      headerName: 'Paciente',
+      flex: 1,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => (
         <Box>
@@ -696,10 +696,10 @@ const ConfirmacaoPacientes: React.FC = () => {
         </Box>
       )
     },
-    { 
-      field: 'DataMarcada', 
-      headerName: 'Data da Consulta', 
-      flex: 1, 
+    {
+      field: 'DataMarcada',
+      headerName: 'Data da Consulta',
+      flex: 1,
       minWidth: 160,
       valueFormatter: (params) => params.value || 'Não agendado',
       renderCell: (params) => {
@@ -707,17 +707,17 @@ const ConfirmacaoPacientes: React.FC = () => {
         return params.value; // Mostra a data exatamente como está no formato "DD/MM/AAAA HH:MM"
       }
     },
-    { 
-      field: 'Medico', 
-      headerName: 'Médico', 
-      flex: 1, 
+    {
+      field: 'Medico',
+      headerName: 'Médico',
+      flex: 1,
       minWidth: 160,
       valueFormatter: (params) => params.value || 'Não informado'
     },
-    { 
-      field: 'Convenio', 
-      headerName: 'Convênio', 
-      flex: 1, 
+    {
+      field: 'Convenio',
+      headerName: 'Convênio',
+      flex: 1,
       minWidth: 140,
       valueFormatter: (params) => params.value || 'Não informado'
     },
@@ -729,9 +729,9 @@ const ConfirmacaoPacientes: React.FC = () => {
       valueFormatter: (params) => params.value || 'N/A'
     },
     {
-      field: 'Telefone', 
-      headerName: 'Telefone', 
-      flex: 1, 
+      field: 'Telefone',
+      headerName: 'Telefone',
+      flex: 1,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => {
         const renderTelefone = (tel: string) => {
@@ -743,11 +743,11 @@ const ConfirmacaoPacientes: React.FC = () => {
 
           return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-              <a 
-                href={whatsappLink} 
-                target="_blank" 
+              <a
+                href={whatsappLink}
+                target="_blank"
                 rel="noopener noreferrer"
-                style={{ 
+                style={{
                   textDecoration: 'none',
                   color: '#1976d2',
                   display: 'flex',
@@ -757,10 +757,10 @@ const ConfirmacaoPacientes: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
-                  alt="WhatsApp" 
-                  style={{ width: '14px', height: '14px', flexShrink: 0 }} 
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                  alt="WhatsApp"
+                  style={{ width: '14px', height: '14px', flexShrink: 0 }}
                 />
                 {numeroExibicao}
               </a>
@@ -785,7 +785,7 @@ const ConfirmacaoPacientes: React.FC = () => {
           const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
           return renderTelefone(whatsappCel);
         }
-        
+
         // Para a sub-aba de Erros, mostra todos os telefones
         const telefones = [
           params.row.Telefone,
@@ -794,9 +794,9 @@ const ConfirmacaoPacientes: React.FC = () => {
           params.row.TelefoneRes,
           params.row.WhatsAppCel,
         ].filter(tel => tel && tel.trim() !== '');
-        
+
         if (telefones.length === 0) return 'Não informado';
-        
+
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
             {telefones.map((tel, index) => (
@@ -812,7 +812,7 @@ const ConfirmacaoPacientes: React.FC = () => {
 
   // Colunas para a aba de pacientes (inclui o link e a numeração)
   const columnsPacientes = [numeroSequencialColumn, linkColumn, ...commonColumns];
-  
+
   // Colunas para a aba de erros (inclui a numeração)
   const columnsErros = [numeroSequencialColumn, ...commonColumns];
 
@@ -842,24 +842,24 @@ const ConfirmacaoPacientes: React.FC = () => {
   const rowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
       if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
-      
+
       // Usa regex para dividir por qualquer quantidade de espaços em branco
       const parts = String(dm).trim().split(/\s+/);
       const dataStr = parts[0];
       const horaStr = parts.length > 1 ? parts[1] : '';
 
       if (!dataStr || dataStr === 'Não agendado' || dataStr === 'Sem Data') return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
-      
+
       const [diaS, mesS, anoS] = dataStr.split('/').map(Number);
       const d = Number(diaS), m = Number(mesS), y = Number(anoS);
-      
+
       let hh = 0, mm = 0;
       if (horaStr) {
         const [hhS, mmS] = horaStr.split(':');
         hh = Number(hhS) || 0;
         mm = Number(mmS) || 0;
       }
-      
+
       if (!y || !m || !d) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
       return { y, m, d, hh, mm, valid: true };
     };
@@ -919,7 +919,7 @@ const ConfirmacaoPacientes: React.FC = () => {
       mensagem: erro.mensagem || 'Erro na confirmação'
     }));
   }, [errosFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
-  
+
   // Alternância de sub-aba poderá ser ativada via toggle futuramente
 
   return (
@@ -949,6 +949,7 @@ const ConfirmacaoPacientes: React.FC = () => {
               value={filtroDataExistente}
               onChange={(e) => setFiltroDataExistente(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
               renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
             >
               {datasOrdenadas.map((d) => (
                 <MenuItem
@@ -979,6 +980,7 @@ const ConfirmacaoPacientes: React.FC = () => {
               value={filtroMedico}
               onChange={(e) => setFiltroMedico(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
               renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
             >
               {medicosUnicos.map((m) => (
                 <MenuItem
@@ -1003,6 +1005,7 @@ const ConfirmacaoPacientes: React.FC = () => {
               value={filtroConvenio}
               onChange={(e) => setFiltroConvenio(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
               renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
             >
               {conveniosUnicos.map((c) => (
                 <MenuItem
@@ -1035,8 +1038,8 @@ const ConfirmacaoPacientes: React.FC = () => {
               setFiltroMedico([]);
               setFiltroConvenio([]);
             }}>Limpar</Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="small"
               onClick={() => {
                 setBatchSelectType('');
@@ -1057,9 +1060,9 @@ const ConfirmacaoPacientes: React.FC = () => {
         </Alert>
       )}
 
-      <Paper sx={{ 
-        flex: 1, 
-        display: 'flex', 
+      <Paper sx={{
+        flex: 1,
+        display: 'flex',
         flexDirection: 'column',
         width: '100%',
         minWidth: 0, // Garante que o Paper não ultrapasse o contêiner pai
@@ -1083,7 +1086,7 @@ const ConfirmacaoPacientes: React.FC = () => {
         {/* Abas Pacientes/Erros */}
         <Box sx={{ px: 2, pt: 1 }}>
           <Tabs value={subTabAtiva} onChange={(_, v: number) => setSubTabAtiva(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab 
+            <Tab
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <span>Pacientes</span>
@@ -1095,7 +1098,7 @@ const ConfirmacaoPacientes: React.FC = () => {
                 </Box>
               }
             />
-            <Tab 
+            <Tab
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <span>Erros</span>
@@ -1123,12 +1126,12 @@ const ConfirmacaoPacientes: React.FC = () => {
               pagination
               components={{
                 NoRowsOverlay: () => (
-                  <Box 
-                    display="flex" 
-                    flexDirection="column" 
-                    justifyContent="center" 
-                    alignItems="center" 
-                    height="100%" 
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="center"
+                    alignItems="center"
+                    height="100%"
                     p={4}
                   >
                     <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -1174,12 +1177,12 @@ const ConfirmacaoPacientes: React.FC = () => {
               getRowHeight={() => 'auto'}
               components={{
                 NoRowsOverlay: () => (
-                  <Box 
-                    display="flex" 
-                    flexDirection="column" 
-                    justifyContent="center" 
-                    alignItems="center" 
-                    height="100%" 
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="center"
+                    alignItems="center"
+                    height="100%"
                     p={4}
                   >
                     <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -1268,6 +1271,7 @@ const ConfirmacaoPacientes: React.FC = () => {
                 label="Valor"
                 value={batchSelectValue}
                 onChange={(e) => setBatchSelectValue(e.target.value)}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
               >
                 {batchSelectType === 'data' && datasOrdenadas.map(d => (
                   <MenuItem key={d} value={d}>{d}</MenuItem>
@@ -1284,7 +1288,7 @@ const ConfirmacaoPacientes: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBatchSelectOpen(false)}>Cancelar</Button>
-          <Button 
+          <Button
             onClick={() => handleBatchAction('desmarcar')}
             variant="outlined"
             color="secondary"
@@ -1292,8 +1296,8 @@ const ConfirmacaoPacientes: React.FC = () => {
           >
             Desmarcar
           </Button>
-          <Button 
-            onClick={() => handleBatchAction('marcar')} 
+          <Button
+            onClick={() => handleBatchAction('marcar')}
             variant="contained"
             disabled={!batchSelectType || !batchSelectValue}
           >
