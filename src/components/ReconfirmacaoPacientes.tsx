@@ -251,7 +251,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
   }, [carregarDados]);
 
   // Função para copiar apenas o telefone
-  const copiarTelefone = (telefone: string, pacienteId: string) => {
+  const copiarTelefone = (telefone: any, pacienteId: string) => {
     const numeroLimpo = String(telefone).replace(/\D/g, '');
     navigator.clipboard.writeText(numeroLimpo).then(() => {
       setSnackbar({ open: true, message: 'Telefone copiado!', severity: 'success' });
@@ -304,7 +304,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     const dataMarcadaString = paciente.DataMarcada || '';
 
     // Separa a string em partes, removendo espaços em branco extras
-    const parts = dataMarcadaString.split(' ').filter(part => part.trim() !== '');
+    const parts = String(dataMarcadaString).split(' ').filter(part => String(part).trim() !== '');
 
     const data = parts[0] || '';
     let hora = parts.length > 1 ? parts.slice(1).join(' ') : '';
@@ -330,12 +330,6 @@ const ReconfirmacaoPacientes: React.FC = () => {
     }
 
     // Adiciona o complemento da mensagem
-    // mensagem += "\n\n📍 Caso necessite de declaração de comparecimento ou emissão de Nota Carioca, " +
-    //            "solicitamos que o pedido seja feito no dia da consulta, diretamente na recepção da clínica. " +
-    //            "Se a solicitação for feita posteriormente, o prazo para entrega será de até 24 horas.";
-
-    mensagem += "\n\n📍 Declarações e Notas Cariocas devem ser solicitadas no dia da consulta, na recepção. " +
-      "Pedidos posteriores: prazo até 48h e retirada apenas na recepção";
 
     const telefone = paciente.WhatsAppCel || paciente.TelefoneCel || paciente.TelefoneRes || paciente.TelefoneCom || paciente.Telefone || '';
     if (telefone) {
@@ -569,7 +563,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
     filterable: false,
     renderCell: (params: GridRenderCellParams) => {
       const whatsappCel = params.row.WhatsAppCel || '';
-      if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
+      if (!whatsappCel || String(whatsappCel).trim() === '') return 'Sem WhatsApp';
 
       const mensagem = formatarMensagem(params.row);
       // O link é construído, mas usamos a mensagem de texto para exibição
@@ -671,11 +665,11 @@ const ReconfirmacaoPacientes: React.FC = () => {
       flex: 1,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => {
-        const renderTelefone = (tel: string) => {
-          if (!tel || tel.trim() === '') return 'Não informado';
+        const renderTelefone = (tel: any) => {
+          if (!tel || String(tel).trim() === '') return 'Não informado';
 
-          const numeroLimpo = tel.replace(/\D/g, '');
-          const numeroExibicao = tel.replace(/^55/, '');
+          const numeroLimpo = String(tel).replace(/\D/g, '');
+          const numeroExibicao = String(tel).replace(/^55/, '');
           const whatsappLink = `https://wa.me/55${numeroLimpo.replace(/^55/, '')}`;
 
           return (
@@ -730,7 +724,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
           params.row.TelefoneCom,
           params.row.TelefoneRes,
           params.row.WhatsAppCel,
-        ].filter(tel => tel && tel.trim() !== '');
+        ].filter(tel => tel && String(tel).trim() !== '');
 
         if (telefones.length === 0) return 'Não informado';
 

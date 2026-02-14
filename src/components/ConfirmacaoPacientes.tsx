@@ -412,7 +412,7 @@ const ConfirmacaoPacientes: React.FC = () => {
     filterable: false,
     renderCell: (params: GridRenderCellParams) => {
       const whatsappCel = params.row.WhatsAppCel || '';
-      if (!whatsappCel || whatsappCel.trim() === '') return 'Sem WhatsApp';
+      if (!whatsappCel || String(whatsappCel).trim() === '') return 'Sem WhatsApp';
 
       const mensagem = formatarMensagemConfirmacao(params.row);
 
@@ -734,11 +734,11 @@ const ConfirmacaoPacientes: React.FC = () => {
       flex: 1,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => {
-        const renderTelefone = (tel: string) => {
-          if (!tel || tel.trim() === '') return 'Não informado';
+        const renderTelefone = (tel: any) => {
+          if (!tel || String(tel).trim() === '') return 'Não informado';
 
-          const numeroLimpo = tel.replace(/\D/g, '');
-          const numeroExibicao = tel.replace(/^55/, '');
+          const numeroLimpo = String(tel).replace(/\D/g, '');
+          const numeroExibicao = String(tel).replace(/^55/, '');
           const whatsappLink = `https://wa.me/55${numeroLimpo.replace(/^55/, '')}`;
 
           return (
@@ -793,7 +793,7 @@ const ConfirmacaoPacientes: React.FC = () => {
           params.row.TelefoneCom,
           params.row.TelefoneRes,
           params.row.WhatsAppCel,
-        ].filter(tel => tel && tel.trim() !== '');
+        ].filter(tel => tel && String(tel).trim() !== '');
 
         if (telefones.length === 0) return 'Não informado';
 
