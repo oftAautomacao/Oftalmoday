@@ -77,7 +77,7 @@ const ConfirmacaoPacientes: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   // Sub-abas Pacientes/Erros (nível 2)
-  const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
+  const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Antigos, 1: Novos, 2: Erros
 
   const [mensagensConsulta, setMensagensConsulta] = useState<Mensagem[]>([]);
   const [mensagensExame, setMensagensExame] = useState<Mensagem[]>([]);
@@ -96,6 +96,8 @@ const ConfirmacaoPacientes: React.FC = () => {
     severity: 'success',
   });
 
+  const [conversas, setConversas] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     if (database) {
       const consultaRef = ref(database, '/OFT/45/confirmacaoPacientes/mensagens/consulta/1NI_jOTSq0J8bjLLjs0d5937T3n5iP76z19ElRHwmpNU/mensagemConsulta');
@@ -113,6 +115,19 @@ const ConfirmacaoPacientes: React.FC = () => {
         if (data) {
           const mensagensArray = Object.values(data) as Mensagem[];
           setMensagensExame(mensagensArray);
+        }
+      });
+
+      // Novo listener para o histórico de conversas
+      const conversasRef = ref(database, '/OFT/45/agendamentoWhatsApp/operacional/conversas');
+      onValue(conversasRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          // Extrai as chaves (números de telefone)
+          const numeros = new Set(Object.keys(data).map(n => String(n).replace(/\D/g, '')));
+          setConversas(numeros);
+        } else {
+          setConversas(new Set());
         }
       });
     }
@@ -362,18 +377,10 @@ const ConfirmacaoPacientes: React.FC = () => {
   };
 
   // Função para copiar apenas o telefone
-  const copiarTelefone = (telefone: string, pacienteId: string) => {
+  const copiarTelefone = (telefone: string) => {
     const numeroLimpo = String(telefone).replace(/\D/g, '');
     navigator.clipboard.writeText(numeroLimpo).then(() => {
       setSnackbar({ open: true, message: 'Telefone copiado!', severity: 'success' });
-
-      // Atualiza o banco de dados para marcar como copiado
-      if (database) {
-        const pacienteRef = ref(database, `/OFT/45/confirmacaoPacientes/site/aEnviar/${pacienteId}`);
-        update(pacienteRef, { Copiado: true }).catch((error: Error) => {
-          console.error('Erro ao atualizar status de cópia no banco de dados:', error);
-        });
-      }
     }).catch((err) => {
       console.error('Falha ao copiar telefone: ', err);
       setSnackbar({ open: true, message: 'Falha ao copiar telefone.', severity: 'error' });
@@ -681,6 +688,86 @@ const ConfirmacaoPacientes: React.FC = () => {
   // Colunas comuns entre as abas
   const commonColumns: GridColDef[] = [
     {
+      field: 'Telefone',
+      headerName: 'Telefone',
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params: GridRenderCellParams) => {
+        const renderTelefone = (tel: any) => {
+          if (!tel || String(tel).trim() === '') return 'Não informado';
+
+          const numeroLimpo = String(tel).replace(/\D/g, '');
+          const numeroExibicao = String(tel).replace(/^55/, '');
+          const whatsappLink = `https://wa.me/55${numeroLimpo.replace(/^55/, '')}`;
+
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  textDecoration: 'none',
+                  color: '#1976d2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  whiteSpace: 'nowrap'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                  alt="WhatsApp"
+                  style={{ width: '14px', height: '14px', flexShrink: 0 }}
+                />
+                {numeroExibicao}
+              </a>
+              <Tooltip title="Copiar número">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copiarTelefone(tel);
+                  }}
+                  sx={{ p: '2px' }}
+                >
+                  <ContentCopyIcon sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          );
+        };
+
+        // Para as abas de Pacientes (Novos e Antigos), mostra APENAS o WhatsAppCel
+        if (subTabAtiva === 0 || subTabAtiva === 1) {
+          const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
+          return renderTelefone(whatsappCel);
+        }
+
+        // Para a sub-aba de Erros, mostra todos os telefones
+        const telefones = [
+          params.row.Telefone,
+          params.row.TelefoneCel,
+          params.row.TelefoneCom,
+          params.row.TelefoneRes,
+          params.row.WhatsAppCel,
+        ].filter(tel => tel && String(tel).trim() !== '');
+
+        if (telefones.length === 0) return 'Não informado';
+
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+            {telefones.map((tel, index) => (
+              <Box key={index}>
+                {renderTelefone(tel)}
+              </Box>
+            ))}
+          </Box>
+        );
+      }
+    },
+    {
       field: 'Paciente',
       headerName: 'Paciente',
       flex: 1,
@@ -728,86 +815,6 @@ const ConfirmacaoPacientes: React.FC = () => {
       minWidth: 120,
       valueFormatter: (params) => params.value || 'N/A'
     },
-    {
-      field: 'Telefone',
-      headerName: 'Telefone',
-      flex: 1,
-      minWidth: 200,
-      renderCell: (params: GridRenderCellParams) => {
-        const renderTelefone = (tel: any) => {
-          if (!tel || String(tel).trim() === '') return 'Não informado';
-
-          const numeroLimpo = String(tel).replace(/\D/g, '');
-          const numeroExibicao = String(tel).replace(/^55/, '');
-          const whatsappLink = `https://wa.me/55${numeroLimpo.replace(/^55/, '')}`;
-
-          return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  textDecoration: 'none',
-                  color: '#1976d2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  whiteSpace: 'nowrap'
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-                  alt="WhatsApp"
-                  style={{ width: '14px', height: '14px', flexShrink: 0 }}
-                />
-                {numeroExibicao}
-              </a>
-              <Tooltip title="Copiar número">
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copiarTelefone(tel, params.row.id);
-                  }}
-                  sx={{ p: '2px' }}
-                >
-                  <ContentCopyIcon sx={{ fontSize: '1rem' }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          );
-        };
-
-        // Para a sub-aba de Pacientes, mostra APENAS o WhatsAppCel
-        if (subTabAtiva === 0) {
-          const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
-          return renderTelefone(whatsappCel);
-        }
-
-        // Para a sub-aba de Erros, mostra todos os telefones
-        const telefones = [
-          params.row.Telefone,
-          params.row.TelefoneCel,
-          params.row.TelefoneCom,
-          params.row.TelefoneRes,
-          params.row.WhatsAppCel,
-        ].filter(tel => tel && String(tel).trim() !== '');
-
-        if (telefones.length === 0) return 'Não informado';
-
-        return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
-            {telefones.map((tel, index) => (
-              <Box key={index}>
-                {renderTelefone(tel)}
-              </Box>
-            ))}
-          </Box>
-        );
-      }
-    },
   ];
 
   // Colunas para a aba de pacientes (inclui o link e a numeração)
@@ -839,7 +846,7 @@ const ConfirmacaoPacientes: React.FC = () => {
   };
 
   // Dados formatados para as tabelas (aplica filtros adicionais)
-  const rowsPacientes = useMemo(() => {
+  const allRowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
       if (!dm) return { y: 0, m: 0, d: 0, hh: 0, mm: 0, valid: false };
 
@@ -885,7 +892,7 @@ const ConfirmacaoPacientes: React.FC = () => {
       });
 
     return lista.map((paciente) => {
-      console.log('Processando paciente:', paciente.id, 'WhatsAppCel:', paciente.WhatsAppCel);
+      // console.log('Processando paciente:', paciente.id, 'WhatsAppCel:', paciente.WhatsAppCel);
       return {
         id: paciente.id,
         Paciente: paciente.Paciente || 'Não informado',
@@ -904,6 +911,27 @@ const ConfirmacaoPacientes: React.FC = () => {
       };
     });
   }, [pacientesFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
+
+  // Divide pacientes entre novos e antigos
+  const { rowsPacientesNovos, rowsPacientesAntigos } = useMemo(() => {
+    const novos: any[] = [];
+    const antigos: any[] = [];
+
+    allRowsPacientes.forEach(p => {
+      const tel = String(p.WhatsAppCel || '').replace(/\D/g, '').replace(/^55/, '');
+      // Verifica se o telefone (limpo e sem 55) está nas conversas
+      if (conversas.has(tel) || conversas.has(`55${tel}`)) {
+        antigos.push(p);
+      } else {
+        novos.push(p);
+      }
+    });
+
+    return { rowsPacientesNovos: novos, rowsPacientesAntigos: antigos };
+  }, [allRowsPacientes, conversas]);
+
+  // Alias para manter compatibilidade com funções que usam rowsPacientes (como handleBatchAction)
+  const rowsPacientes = subTabAtiva === 0 ? rowsPacientesAntigos : (subTabAtiva === 1 ? rowsPacientesNovos : []);
 
   const rowsErros = useMemo(() => {
     const lista = errosFiltrados.filter(aplicaFiltros);
@@ -1083,16 +1111,28 @@ const ConfirmacaoPacientes: React.FC = () => {
           minWidth: '100% !important', // Força a largura mínima das linhas
         }
       }}>
-        {/* Abas Pacientes/Erros */}
+        {/* Abas Pacientes Novos / Antigos / Erros */}
         <Box sx={{ px: 2, pt: 1 }}>
           <Tabs value={subTabAtiva} onChange={(_, v: number) => setSubTabAtiva(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tab
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <span>Pacientes</span>
-                  {rowsPacientes.length > 0 && (
+                  <span>Pacientes Antigos</span>
+                  {rowsPacientesAntigos.length > 0 && (
+                    <Box sx={{ bgcolor: 'secondary.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                      {rowsPacientesAntigos.length}
+                    </Box>
+                  )}
+                </Box>
+              }
+            />
+            <Tab
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Pacientes Novos</span>
+                  {rowsPacientesNovos.length > 0 && (
                     <Box sx={{ bgcolor: 'primary.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                      {rowsPacientes.length}
+                      {rowsPacientesNovos.length}
                     </Box>
                   )}
                 </Box>
@@ -1112,10 +1152,10 @@ const ConfirmacaoPacientes: React.FC = () => {
             />
           </Tabs>
         </Box>
-        {subTabAtiva === 0 ? (
+        {subTabAtiva === 0 || subTabAtiva === 1 ? (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <DataGrid
-              rows={rowsPacientes}
+              rows={subTabAtiva === 0 ? rowsPacientesAntigos : rowsPacientesNovos}
               columns={columnsPacientes}
               autoHeight
               disableRowSelectionOnClick
@@ -1138,7 +1178,7 @@ const ConfirmacaoPacientes: React.FC = () => {
                       Nenhum paciente encontrado
                     </Typography>
                     <Typography variant="body2" color="textSecondary" align="center">
-                      {search ? 'Nenhum resultado para a busca atual' : 'Nenhum paciente aguardando confirmação'}
+                      {search ? 'Nenhum resultado para a busca atual' : (subTabAtiva === 0 ? 'Nenhum paciente antigo aguardando confirmação' : 'Nenhum paciente novo aguardando confirmação')}
                     </Typography>
                   </Box>
                 ),
