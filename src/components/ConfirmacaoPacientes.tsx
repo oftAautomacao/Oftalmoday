@@ -368,11 +368,6 @@ const ConfirmacaoPacientes: React.FC = () => {
       .replace(/{Endereco}/g, endereco)
       .replace(/{Exame}/g, medico);
 
-    const telefone = (paciente as any).WhatsAppCel || (paciente as any).whatsappcel || (paciente as any).whatsAppCel || '';
-    if (telefone) {
-      mensagem += `\n\n${telefone}`;
-    }
-
     return mensagem;
   };
 

@@ -341,11 +341,6 @@ const ReconfirmacaoPacientes: React.FC = () => {
 
     // Adiciona o complemento da mensagem
 
-    const telefone = paciente.WhatsAppCel || paciente.TelefoneCel || paciente.TelefoneRes || paciente.TelefoneCom || paciente.Telefone || '';
-    if (telefone) {
-      mensagem += `\n\n${telefone}`;
-    }
-
     // Retorna a mensagem bruta
     return mensagem;
   }, []);

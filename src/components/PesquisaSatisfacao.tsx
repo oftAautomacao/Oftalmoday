@@ -363,11 +363,6 @@ const PesquisaSatisfacao: React.FC = () => {
       mensagem += `\n\nObrigado e até a próxima consulta.`;
     }
 
-    // Adiciona o telefone no final
-    if (paciente.WhatsAppCel) {
-      mensagem += `\n\n${paciente.WhatsAppCel}`;
-    }
-
     // Retorna a mensagem bruta
     return mensagem;
   }, [mensagensPesquisa]);

@@ -322,11 +322,6 @@ const PacientesFaltosos: React.FC = () => {
     mensagem += `\nVimos que não pôde comparecer à consulta agendada em ${data} às ${hora} com o(a) Dr(a) ${paciente.Medico}. 
       \nGostaria de reagendar? 😊`;
 
-    const telefone = paciente.WhatsAppCel || paciente.TelefoneCel || paciente.TelefoneRes || paciente.TelefoneCom || paciente.Telefone || '';
-    if (telefone) {
-      mensagem += `\n\n${telefone}`;
-    }
-
     // Retorna a mensagem bruta
     return mensagem;
   }, []);
