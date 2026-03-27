@@ -85,7 +85,7 @@ const PesquisaSatisfacao: React.FC = () => {
   const [filtroConvenio, setFiltroConvenio] = useState<string[]>([]); // [] = todos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tabAtiva, setTabAtiva] = useState(0);
+  const [tabAtiva, setTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: '',
@@ -104,23 +104,7 @@ const PesquisaSatisfacao: React.FC = () => {
   const [batchSelectType, setBatchSelectType] = useState(''); // 'data', 'medico', 'convenio'
   const [batchSelectValue, setBatchSelectValue] = useState('');
 
-  const [conversas, setConversas] = useState<Set<string>>(new Set());
 
-  // Efeito para carregar as conversas do Firebase
-  useEffect(() => {
-    if (database) {
-      const conversasRef = ref(database, '/OFT/45/agendamentoWhatsApp/operacional/conversas');
-      onValue(conversasRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const numeros = new Set(Object.keys(data).map(n => String(n).replace(/\D/g, '')));
-          setConversas(numeros);
-        } else {
-          setConversas(new Set());
-        }
-      });
-    }
-  }, [database]);
 
   useEffect(() => {
     if (database) {
@@ -713,8 +697,8 @@ const PesquisaSatisfacao: React.FC = () => {
           );
         };
 
-        // Para as abas de Pacientes (Antigos e Novos), mostra APENAS o WhatsAppCel
-        if (tabAtiva === 0 || tabAtiva === 1) {
+        // Para a aba de Pacientes, mostra APENAS o WhatsAppCel
+        if (tabAtiva === 0) {
           const whatsappCel = params.row.WhatsAppCel || params.row.whatsappcel || params.row.whatsAppCel;
           return renderTelefone(whatsappCel);
         }
@@ -863,22 +847,6 @@ const PesquisaSatisfacao: React.FC = () => {
     }));
   }, [pacientesFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
 
-  // Divide pacientes entre novos e antigos
-  const { rowsPacientesNovos, rowsPacientesAntigos } = useMemo(() => {
-    const novos: any[] = [];
-    const antigos: any[] = [];
-
-    allRowsPacientes.forEach(p => {
-      const tel = String(p.WhatsAppCel || p.TelefoneCel || p.Telefone || '').replace(/\D/g, '').replace(/^55/, '');
-      if (conversas.has(tel) || conversas.has(`55${tel}`)) {
-        antigos.push(p);
-      } else {
-        novos.push(p);
-      }
-    });
-
-    return { rowsPacientesNovos: novos, rowsPacientesAntigos: antigos };
-  }, [allRowsPacientes, conversas]);
 
 
 
@@ -908,7 +876,7 @@ const PesquisaSatisfacao: React.FC = () => {
               fullWidth
               variant="outlined"
               size="small"
-              placeholder={tabAtiva === 0 ? "Buscar por nome/telefone..." : "Buscar por nome/telefone..."}
+              placeholder="Buscar por nome/telefone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{
@@ -1082,22 +1050,10 @@ const PesquisaSatisfacao: React.FC = () => {
           <Tab
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>Pesquisas Antigas</span>
-                {rowsPacientesAntigos.length > 0 && (
-                  <Box sx={{ bgcolor: 'secondary.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                    {rowsPacientesAntigos.length}
-                  </Box>
-                )}
-              </Box>
-            }
-          />
-          <Tab
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>Pesquisas Novas</span>
-                {rowsPacientesNovos.length > 0 && (
+                <span>Pacientes</span>
+                {allRowsPacientes.length > 0 && (
                   <Box sx={{ bgcolor: 'primary.main', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                    {rowsPacientesNovos.length}
+                    {allRowsPacientes.length}
                   </Box>
                 )}
               </Box>
@@ -1132,9 +1088,9 @@ const PesquisaSatisfacao: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
               <CircularProgress />
             </Box>
-          ) : tabAtiva === 0 || tabAtiva === 1 ? (
+          ) : tabAtiva === 0 ? (
             <DataGrid
-              rows={tabAtiva === 0 ? rowsPacientesAntigos : rowsPacientesNovos} // Changed from pacientes
+              rows={allRowsPacientes} // Changed from pacientes
               columns={columnsPacientes} // Changed from colunas
               autoHeight
               disableRowSelectionOnClick
@@ -1158,7 +1114,7 @@ const PesquisaSatisfacao: React.FC = () => {
                       Nenhum paciente encontrado
                     </Typography>
                     <Typography variant="body2" color="textSecondary" align="center">
-                      {search ? 'Nenhum resultado para a busca atual' : (tabAtiva === 0 ? 'Nenhum paciente antigo na lista de pesquisa de satisfação' : 'Nenhum paciente novo na lista de pesquisa de satisfação')}
+                      {search ? 'Nenhum resultado para a busca atual' : 'Nenhum paciente na lista de pesquisa de satisfação'}
                     </Typography>
                   </Box>
                 ),
