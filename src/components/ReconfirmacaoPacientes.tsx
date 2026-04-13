@@ -1,3 +1,8 @@
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { ptBR } from 'date-fns/locale/pt-BR';
+
+registerLocale('pt-BR', ptBR);
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ref, onValue, update, DataSnapshot } from 'firebase/database';
 import { useAmbiente } from '../contexts/AmbienteContext';
@@ -21,11 +26,7 @@ import {
   Select, // Added
   MenuItem, // Added
   Button, // Added
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
+  Grid,
 } from '@mui/material';
 
 // Componente Alert personalizado para o Snackbar
@@ -37,6 +38,8 @@ const Alert = React.forwardRef<HTMLDivElement, MuiAlertProps>(function Alert(
 });
 
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -75,6 +78,9 @@ const ReconfirmacaoPacientes: React.FC = () => {
   const [dados, setDados] = useState<DadosFirebase>({ aEnviar: {}, erro: {} });
   const [search, setSearch] = useState('');
   // Filtros
+  const [dataInicial, setDataInicial] = useState<Date | null>(null);
+  const [dataFinal, setDataFinal] = useState<Date | null>(null);
+  const [tipoFiltroData, setTipoFiltroData] = useState<'avulso' | 'periodo'>('avulso');
   const [filtroDataExistente, setFiltroDataExistente] = useState<string[]>([]); // [] = todas
   const [filtroMedico, setFiltroMedico] = useState<string[]>([]); // [] = todos
   const [filtroConvenio, setFiltroConvenio] = useState<string[]>([]); // [] = todos
@@ -93,10 +99,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
   });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null); // Added
 
-  // Estado para o dialog de seleção em lote
-  const [batchSelectOpen, setBatchSelectOpen] = useState(false);
-  const [batchSelectType, setBatchSelectType] = useState(''); // 'data', 'medico', 'convenio'
-  const [batchSelectValue, setBatchSelectValue] = useState('');
+  // Estados de batch select removidos
 
 
 
@@ -362,71 +365,41 @@ const ReconfirmacaoPacientes: React.FC = () => {
     }
   };
 
-  // Função para Seleção Multipla
+  // Função para Marcar/Desmarcar Visíveis
   const handleBatchAction = (action: 'marcar' | 'desmarcar') => {
-    if (!batchSelectType || !batchSelectValue || !database) {
-      setSnackbar({ open: true, message: 'Por favor, selecione o tipo e o valor do filtro.', severity: 'warning' });
-      return;
-    }
+    if (!database) return;
 
-    let pacientesParaMarcar: string[] = [];
-
-    if (batchSelectType === 'data') {
-      pacientesParaMarcar = rowsPacientes
-        .filter(p => extrairApenasData(p.DataMarcada) === batchSelectValue)
-        .map(p => p.id);
-    } else if (batchSelectType === 'medico') {
-      pacientesParaMarcar = rowsPacientes
-        .filter(p => p.Medico === batchSelectValue)
-        .map(p => p.id);
-    } else if (batchSelectType === 'convenio') {
-      pacientesParaMarcar = rowsPacientes
-        .filter(p => p.Convenio === batchSelectValue)
-        .map(p => p.id);
-    }
-
-    if (pacientesParaMarcar.length === 0) {
-      setSnackbar({ open: true, message: 'Nenhum paciente encontrado com o critério selecionado.', severity: 'info' });
-      setBatchSelectOpen(false);
+    if (rowsPacientes.length === 0) {
+      setSnackbar({ open: true, message: 'Nenhum paciente visível para selecionar.', severity: 'info' });
       return;
     }
 
     const novosSelecionados = { ...selectedRows };
     const updates: Record<string, boolean | null> = {};
 
-    pacientesParaMarcar.forEach(id => {
-      const caminho = `/OFT/45/reconfirmacaoPacientes/site/aEnviar/${id}/Copiado`;
+    rowsPacientes.forEach(p => {
+      const caminho = `/OFT/45/reconfirmacaoPacientes/site/aEnviar/${p.id}/Copiado`;
       if (action === 'marcar') {
-        novosSelecionados[id] = true;
+        novosSelecionados[p.id] = true;
         updates[caminho] = true;
-      } else { // 'desmarcar'
-        delete novosSelecionados[id];
-        updates[caminho] = null; // null remove o campo no Firebase
+      } else {
+        delete novosSelecionados[p.id];
+        updates[caminho] = null;
       }
     });
 
-    // Atualiza o estado local
     setSelectedRows(novosSelecionados);
 
     const successMessage = action === 'marcar'
-      ? `${pacientesParaMarcar.length} paciente(s) marcados com sucesso!`
-      : `${pacientesParaMarcar.length} paciente(s) desmarcado(s) com sucesso!`;
+      ? `${rowsPacientes.length} paciente(s) marcados com sucesso!`
+      : `${rowsPacientes.length} paciente(s) desmarcado(s) com sucesso!`;
 
-    const errorMessage = action === 'marcar'
-      ? 'Ocorreu um erro ao marcar os pacientes.'
-      : 'Ocorreu um erro ao desmarcar os pacientes.';
-
-    // Atualiza o Firebase em lote
     update(ref(database), updates)
-      .then(() => {
-        setSnackbar({ open: true, message: successMessage, severity: 'success' });
-      })
+      .then(() => setSnackbar({ open: true, message: successMessage, severity: 'success' }))
       .catch(error => {
-        console.error('Erro ao marcar pacientes em lote no Firebase:', error);
-        setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+        console.error('Erro ao marcar pacientes no Firebase:', error);
+        setSnackbar({ open: true, message: 'Ocorreu um erro ao atualizar.', severity: 'error' });
       });
-
-    setBatchSelectOpen(false);
   };
 
   // Função para obter o índice da linha de forma segura
@@ -741,6 +714,27 @@ const ReconfirmacaoPacientes: React.FC = () => {
   const extrairApenasData = (dm?: string) => (dm ? String(dm).split(' ')[0] : 'Sem Data');
 
   const aplicaFiltros = (item: Paciente) => {
+        // Filtro por Período (Calendário)
+    if (dataInicial) {
+      const dStr = extrairApenasData(item.DataMarcada);
+      if (dStr === 'Sem Data' || dStr === 'Não agendado') return false;
+      const [dia, mes, ano] = dStr.split('/').map(Number);
+      const dataPac = new Date(ano, mes - 1, dia);
+      dataPac.setHours(0, 0, 0, 0);
+      
+      const dInicio = new Date(dataInicial);
+      dInicio.setHours(0, 0, 0, 0);
+
+      if (dataFinal) {
+        const dFim = new Date(dataFinal);
+        dFim.setHours(0, 0, 0, 0);
+        if (dataPac < dInicio || dataPac > dFim) return false;
+      } else {
+        // Se só tem data inicial, mostra apenas esse dia
+        if (dataPac.getTime() !== dInicio.getTime()) return false;
+      }
+    }
+
     // filtro por data existente (select)
     if (filtroDataExistente.length > 0) {
       const d = extrairApenasData(item.DataMarcada);
@@ -822,7 +816,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
       tipo: 'paciente' as const,
       Copiado: paciente.Copiado, // Include Copiado status
     }));
-  }, [pacientesFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
+  }, [pacientesFiltrados, filtroDataExistente, filtroMedico, filtroConvenio, dataInicial, dataFinal]);
 
   // Alias para manter compatibilidade
   const rowsPacientes = tabAtiva === 0 ? allRowsPacientes : [];
@@ -841,14 +835,15 @@ const ReconfirmacaoPacientes: React.FC = () => {
       mensagem: erro.mensagem || 'Erro na reconfirmação',
       Copiado: erro.Copiado, // Include Copiado status
     }));
-  }, [errosFiltrados, filtroDataExistente, filtroMedico, filtroConvenio]);
+  }, [errosFiltrados, filtroDataExistente, filtroMedico, filtroConvenio, dataInicial, dataFinal]);
 
 
   return (
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-          <Box sx={{ flex: 1, minWidth: 320 }}> {/* Added minWidth */}
+        <Grid container spacing={2} alignItems="center">
+          {/* Linha 1: Filtros */}
+          <Grid item xs={12} md={3}>
             <TextField
               fullWidth
               variant="outlined"
@@ -859,131 +854,161 @@ const ReconfirmacaoPacientes: React.FC = () => {
               InputProps={{
                 startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
               }}
-              label="Texto" // Added label
+              label="Texto"
             />
-          </Box>
+          </Grid>
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Datas existentes</InputLabel>
-            <Select
-              label="Datas existentes"
-              multiple
-              value={filtroDataExistente}
-              onChange={(e) => setFiltroDataExistente(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
-              renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
-              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
-            >
-              {datasOrdenadas.map((d) => (
-                <MenuItem
-                  key={d}
-                  value={d}
-                  sx={{
-                    '&.Mui-selected': {
-                      backgroundColor: '#bcd2ff', // azul um pouco mais escuro
-                    },
-                    '&.Mui-selected:hover': {
-                      backgroundColor: '#a9c4ff',
-                    },
+          <Grid item xs={12} md={3}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {tipoFiltroData === 'avulso' ? (
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Datas existentes</InputLabel>
+                  <Select
+                    label="Datas existentes"
+                    multiple
+                    value={filtroDataExistente}
+                    onChange={(e) => setFiltroDataExistente(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
+                    renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected.length > 2 ? `${(selected as string[]).slice(0, 2).join(', ')} (+${selected.length - 2})` : (selected as string[]).join(', ')) : '')}
+                    MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
+                  >
+                    {datasOrdenadas.map((d) => (
+                      <MenuItem key={d} value={d} sx={{ '&.Mui-selected': { backgroundColor: '#bcd2ff' }, '&.Mui-selected:hover': { backgroundColor: '#a9c4ff' } }}>
+                        {d}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <DatePicker
+                  selectsRange={true}
+                  startDate={dataInicial}
+                  endDate={dataFinal}
+                  onChange={(update) => {
+                    const [start, end] = update;
+                    setDataInicial(start);
+                    setDataFinal(end);
                   }}
+                  isClearable={true}
+                  locale="pt-BR"
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Selecione o período"
+                  customInput={
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Período"
+                      InputProps={{
+                        startAdornment: <CalendarMonthIcon sx={{ mr: 1, color: 'text.secondary', fontSize: '1.2rem' }} />,
+                      }}
+                    />
+                  }
+                />
+              )}
+              <Tooltip title={tipoFiltroData === 'avulso' ? "Mudar para Período (Calendário)" : "Mudar para Datas Avulsas"}>
+                <IconButton 
+                  onClick={() => setTipoFiltroData(tipoFiltroData === 'avulso' ? 'periodo' : 'avulso')}
+                  color="primary"
+                  size="small"
+                  sx={{ border: '1px solid', borderColor: 'divider' }}
                 >
-                  {d}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Médico</InputLabel>
-            <Select
-              label="Médico"
-              multiple
-              value={filtroMedico}
-              onChange={(e) => setFiltroMedico(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
-              renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
-              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
-            >
-              {medicosUnicos.map((m) => (
-                <MenuItem
-                  key={m}
-                  value={m}
-                  sx={{
-                    '&.Mui-selected': { backgroundColor: '#bcd2ff' },
-                    '&.Mui-selected:hover': { backgroundColor: '#a9c4ff' },
-                  }}
-                >
-                  {m}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Convênio</InputLabel>
-            <Select
-              label="Convênio"
-              multiple
-              value={filtroConvenio}
-              onChange={(e) => setFiltroConvenio(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
-              renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected as string[]).join(', ') : '')}
-              MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
-            >
-              {conveniosUnicos.map((c) => (
-                <MenuItem
-                  key={c}
-                  value={c}
-                  sx={{
-                    '&.Mui-selected': { backgroundColor: '#bcd2ff' },
-                    '&.Mui-selected:hover': { backgroundColor: '#a9c4ff' },
-                  }}
-                >
-                  {c}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title="Atualizar dados">
-              <span>
-                <IconButton
-                  onClick={carregarDados} // Call carregarDados directly
-                  disabled={loading}
-                  sx={{
-                    backgroundColor: '#e8f5e9', // Verde claro
-                    '&:hover': {
-                      backgroundColor: '#c8e6c9' // Verde um pouco mais escuro no hover
-                    },
-                    '&:disabled': {
-                      backgroundColor: 'action.disabledBackground',
-                      color: 'action.disabled'
-                    }
-                  }}
-                >
-                  {loading ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <RefreshIcon />
-                  )}
+                  {tipoFiltroData === 'avulso' ? <CalendarMonthIcon /> : <ListAltIcon />}
                 </IconButton>
-              </span>
-            </Tooltip>
-            <Button variant="outlined" size="small" onClick={() => {
-              setSearch('');
-              setFiltroDataExistente([]);
-              setFiltroMedico([]);
-              setFiltroConvenio([]);
-            }}>Limpar</Button>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={() => setBatchSelectOpen(true)}
-              sx={{ backgroundColor: '#ffc107', color: 'black', '&:hover': { backgroundColor: '#ffa000' } }}
-            >
-              Seleção Multipla
-            </Button>
-          </Stack>
-        </Stack>
+              </Tooltip>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>Médico</InputLabel>
+              <Select
+                label="Médico"
+                multiple
+                value={filtroMedico}
+                onChange={(e) => setFiltroMedico(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
+                renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected.length > 1 ? `${(selected as string[]).slice(0, 1).join(', ')} (+${selected.length - 1})` : (selected as string[]).join(', ')) : '')}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
+              >
+                {medicosUnicos.map((m) => (
+                  <MenuItem key={m} value={m} sx={{ '&.Mui-selected': { backgroundColor: '#bcd2ff' }, '&.Mui-selected:hover': { backgroundColor: '#a9c4ff' } }}>
+                    {m}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>Convênio</InputLabel>
+              <Select
+                label="Convênio"
+                multiple
+                value={filtroConvenio}
+                onChange={(e) => setFiltroConvenio(typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]))}
+                renderValue={(selected) => (Array.isArray(selected) && selected.length > 0 ? (selected.length > 1 ? `${(selected as string[]).slice(0, 1).join(', ')} (+${selected.length - 1})` : (selected as string[]).join(', ')) : '')}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
+              >
+                {conveniosUnicos.map((c) => (
+                  <MenuItem key={c} value={c} sx={{ '&.Mui-selected': { backgroundColor: '#bcd2ff' }, '&.Mui-selected:hover': { backgroundColor: '#a9c4ff' } }}>
+                    {c}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Linha 2: Ações */}
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end', mt: 1 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Tooltip title="Atualizar dados">
+                  <span>
+                    <IconButton
+                      onClick={carregarDados}
+                      disabled={loading}
+                      sx={{
+                        backgroundColor: '#e8f5e9',
+                        '&:hover': { backgroundColor: '#c8e6c9' },
+                        '&:disabled': { backgroundColor: 'action.disabledBackground', color: 'action.disabled' }
+                      }}
+                    >
+                      {loading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                
+                <Button variant="outlined" size="small" onClick={() => {
+                  setSearch('');
+                  setFiltroDataExistente([]);
+                  setFiltroMedico([]);
+                  setFiltroConvenio([]);
+                  setDataInicial(null);
+                  setDataFinal(null);
+                }}>
+                  Limpar
+                </Button>
+
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => handleBatchAction('marcar')}
+                  sx={{ backgroundColor: '#e3f2fd', color: '#1976d2', border: '1px solid #bbdefb', boxShadow: 'none', '&:hover': { backgroundColor: '#bbdefb', boxShadow: 'none' } }}
+                >
+                  Marcar Todos
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="secondary"
+                  onClick={() => handleBatchAction('desmarcar')} sx={{ color: "text.secondary", borderColor: "divider", "&:hover": { borderColor: "text.secondary", backgroundColor: "transparent" } }}
+                >
+                  Desmarcar Todos
+                </Button>
+              </Stack>
+            </Box>
+          </Grid>
+        </Grid>
       </Paper>
 
       {error && (
@@ -1009,10 +1034,8 @@ const ReconfirmacaoPacientes: React.FC = () => {
           minWidth: '100% !important',
         },
         '& .MuiDataGrid-columnsContainer': {
-          minWidth: '100% !important',
         },
         '& .MuiDataGrid-row': {
-          minWidth: '100% !important',
         }
       }}>
         <Tabs
@@ -1195,57 +1218,7 @@ const ReconfirmacaoPacientes: React.FC = () => {
         </Typography>
       )}
 
-      {/* Dialog para seleção em lote */}
-      <Dialog open={batchSelectOpen} onClose={() => setBatchSelectOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Marcação em Lote</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            Selecione um critério para marcar todos os pacientes correspondentes na tabela.
-          </DialogContentText>
-          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-            <InputLabel>Critério</InputLabel>
-            <Select
-              label="Critério"
-              value={batchSelectType}
-              onChange={(e) => {
-                setBatchSelectType(e.target.value);
-                setBatchSelectValue(''); // Reseta o valor ao trocar o tipo
-              }}
-            >
-              <MenuItem value="data">Data</MenuItem>
-              <MenuItem value="medico">Médico</MenuItem>
-              <MenuItem value="convenio">Convênio</MenuItem>
-            </Select>
-          </FormControl>
-
-          {batchSelectType && (
-            <FormControl fullWidth size="small" disabled={!batchSelectType}>
-              <InputLabel>Valor</InputLabel>
-              <Select
-                label="Valor"
-                value={batchSelectValue}
-                onChange={(e) => setBatchSelectValue(e.target.value)}
-                MenuProps={{ PaperProps: { sx: { maxHeight: 200 } } }}
-              >
-                {batchSelectType === 'data' && datasOrdenadas.map(d => (
-                  <MenuItem key={d} value={d}>{d}</MenuItem>
-                ))}
-                {batchSelectType === 'medico' && medicosUnicos.map(m => (
-                  <MenuItem key={m} value={m}>{m}</MenuItem>
-                ))}
-                {batchSelectType === 'convenio' && conveniosUnicos.map(c => (
-                  <MenuItem key={c} value={c}>{c}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBatchSelectOpen(false)}>Cancelar</Button>
-          <Button onClick={() => handleBatchAction('desmarcar')} variant="outlined" color="secondary" disabled={!batchSelectType || !batchSelectValue}>Desmarcar</Button>
-          <Button onClick={() => handleBatchAction('marcar')} variant="contained" disabled={!batchSelectType || !batchSelectValue}>Marcar</Button>
-        </DialogActions>
-      </Dialog>
+      {/* Dialog removido */}
     </Box>
   );
 };
