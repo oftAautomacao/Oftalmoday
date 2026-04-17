@@ -57,6 +57,9 @@ interface Paciente {
   IDMarcacao: string;
   status: string;
   Copiado?: boolean;
+  Metodo?: string;
+  Status?: string;
+  response?: string;
 }
 
 interface Mensagem {
@@ -84,7 +87,9 @@ const ConfirmacaoPacientes: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   // Sub-abas Pacientes/Erros (nível 2)
-  const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Pacientes, 1: Erros
+  const [subTabAtiva, setSubTabAtiva] = useState(0); // 0: Pacientes, 1: Erros, 2: Informações de Envio
+
+
 
   const [mensagensConsulta, setMensagensConsulta] = useState<Mensagem[]>([]);
   const [mensagensExame, setMensagensExame] = useState<Mensagem[]>([]);
@@ -822,6 +827,107 @@ const ConfirmacaoPacientes: React.FC = () => {
     return true;
   };
 
+  // Métricas de Envio (agora com filtro)
+  const metricasEnvio = useMemo(() => {
+    let comTemplate = 0;
+    let semTemplate = 0;
+    let erros = 0;
+    let naoEnviados = 0;
+    const listaCompletaEnvio: any[] = [];
+
+    if (dados.aEnviar) {
+      Object.entries(dados.aEnviar).forEach(([id, p]) => {
+        const paciente = p as any;
+        
+        if (!aplicaFiltros(paciente as Paciente)) return;
+
+        let pStatus = 'Não Enviado';
+        let pMetodo = 'Não informado';
+
+        if (paciente.Status === 'failed') {
+          erros++;
+          pStatus = 'Erro';
+        } else if (paciente.Metodo) {
+          pStatus = 'Sucesso';
+          if (String(paciente.Metodo).toLowerCase().includes('com template')) {
+            comTemplate++;
+            pMetodo = 'Com Template';
+          } else if (String(paciente.Metodo).toLowerCase().includes('sem template')) {
+            semTemplate++;
+            pMetodo = 'Sem Template';
+          } else {
+            pMetodo = paciente.Metodo;
+          }
+        }
+
+        let skip = false;
+        if (pStatus === 'Não Enviado' && paciente.DataMarcada) {
+          const dataStr = String(paciente.DataMarcada).split(' ')[0];
+          const parts = dataStr.split('/');
+          if (parts.length === 3) {
+            const dataAgendamento = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+            dataAgendamento.setHours(0, 0, 0, 0);
+            
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            const limiteFuturo = new Date(hoje);
+            limiteFuturo.setDate(hoje.getDate() + 3);
+
+            if (dataAgendamento.getTime() > limiteFuturo.getTime()) {
+              skip = true;
+            }
+          }
+        }
+
+        if (!skip) {
+          if (pStatus === 'Não Enviado') {
+            naoEnviados++;
+          }
+
+          listaCompletaEnvio.push({
+            ...paciente,
+            id,
+            StatusEnvio: pStatus,
+            MetodoEnvio: pMetodo
+          });
+        }
+      });
+    }
+
+    listaCompletaEnvio.sort((a, b) => {
+      const cmpData = (d?: string) => {
+        if (!d) return 0;
+        const [dia, mes, ano] = d.split(' ')[0].split('/').map(Number);
+        return new Date(ano, mes - 1, dia).getTime();
+      }
+      return cmpData(a.DataMarcada) - cmpData(b.DataMarcada);
+    });
+
+    return { 
+      comTemplate, 
+      semTemplate, 
+      erros, 
+      naoEnviados,
+      listaCompletaEnvio, 
+      custo: comTemplate * 0.04 
+    };
+  }, [dados.aEnviar, pacientesFiltrados, filtroDataExistente, filtroMedico, filtroConvenio, dataInicial, dataFinal, search]);
+
+  // Atualiza as métricas diárias no Firebase do frontend silenciosamente
+  useEffect(() => {
+    // ATENÇÃO: Só devemos salvar se NÃO houver filtros ativos, senão salvaria um total parcial!
+    const naoTemFiltros = !search && !dataInicial && !dataFinal && filtroDataExistente.length === 0 && filtroMedico.length === 0 && filtroConvenio.length === 0;
+    
+    if (naoTemFiltros && database && (metricasEnvio.comTemplate > 0 || metricasEnvio.semTemplate > 0)) {
+      const hoje = new Date().toISOString().split('T')[0];
+      const metricasRef = ref(database, `/OFT/45/confirmacaoPacientes/metricasEnvio/${hoje}`);
+      update(metricasRef, {
+        templates: metricasEnvio.comTemplate,
+        semTemplates: metricasEnvio.semTemplate // Removido , dependencie list limit
+      }).catch(err => console.error('Erro ao salvar métricas:', err));
+    }
+  }, [database, metricasEnvio.comTemplate, metricasEnvio.semTemplate, search, dataInicial, dataFinal, filtroDataExistente, filtroMedico, filtroConvenio]);
+
   // Dados formatados para as tabelas (aplica filtros adicionais)
   const allRowsPacientes = useMemo(() => {
     const parseDataParts = (dm?: string) => {
@@ -1138,6 +1244,13 @@ const ConfirmacaoPacientes: React.FC = () => {
                 </Box>
               }
             />
+            <Tab
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Informações de Envio</span>
+                </Box>
+              }
+            />
           </Tabs>
         </Box>
         {subTabAtiva === 0 ? (
@@ -1189,6 +1302,64 @@ const ConfirmacaoPacientes: React.FC = () => {
                 minWidth: 0, // Garante que o grid não ultrapasse o contêiner
               }}
             />
+          </Box>
+        ) : subTabAtiva === 2 ? (
+          <Box sx={{ p: 3, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+              <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#e3f2fd', justifyContent: 'center' }}>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Com Template</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{metricasEnvio.comTemplate}</Typography>
+              </Paper>
+
+              <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f3e5f5', justifyContent: 'center' }}>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Sem Template</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{metricasEnvio.semTemplate}</Typography>
+              </Paper>
+
+              <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#ffebee', justifyContent: 'center' }}>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Erros</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>{metricasEnvio.erros}</Typography>
+              </Paper>
+
+              <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f5f5f5', justifyContent: 'center' }}>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Não Enviados Pelo Programa</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{metricasEnvio.naoEnviados}</Typography>
+              </Paper>
+
+              <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#fff3e0', justifyContent: 'center' }}>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Custo (R$ 0,04)</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>R$ {metricasEnvio.custo.toFixed(2).replace('.', ',')}</Typography>
+              </Paper>
+            </Box>
+            
+            <Box sx={{ mt: 3, flex: 1, minHeight: 400 }}>
+              <DataGrid
+                rows={metricasEnvio.listaCompletaEnvio}
+                columns={[
+                  { field: 'DataMarcada', headerName: 'Data Agendada', width: 140 },
+                  { field: 'Paciente', headerName: 'Paciente', flex: 1, minWidth: 200 },
+                  { field: 'TelefoneRes', headerName: 'Telefone', width: 150, renderCell: (params: any) => params.row.WhatsAppCel || params.row.TelefoneCel || params.row.TelefoneRes || 'Não informado' },
+                  { 
+                    field: 'StatusEnvio', 
+                    headerName: 'Status', 
+                    width: 120,
+                    renderCell: (params: any) => (
+                      <Box sx={{ 
+                        color: params.value === 'Sucesso' ? 'success.main' : params.value === 'Erro' ? 'error.main' : 'text.secondary',
+                        fontWeight: 'bold'
+                      }}>
+                        {params.value}
+                      </Box>
+                    )
+                  },
+                  { field: 'MetodoEnvio', headerName: 'Método', width: 150 },
+                  { field: 'response', headerName: 'Detalhes/Erro', flex: 2, minWidth: 250 }
+                ]}
+                autoHeight
+                disableRowSelectionOnClick
+                pageSizeOptions={[100]}
+              />
+            </Box>
           </Box>
         ) : (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
