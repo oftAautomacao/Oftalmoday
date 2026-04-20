@@ -290,7 +290,9 @@ function Principal() {
               sx={{
                 flexGrow: 1,
                 '& .MuiTabs-indicator': {
-                  display: 'none',
+                  height: 3,
+                  borderRadius: '3px 3px 0 0',
+                  backgroundColor: 'primary.main',
                 },
                 '& .MuiTab-root': {
                   textTransform: 'none',
@@ -299,15 +301,12 @@ function Principal() {
                   minWidth: 160,
                   color: 'text.secondary',
                   margin: '0 4px',
-                  borderRadius: '30px',
                   transition: 'all 0.3s ease',
                   '&.Mui-selected': {
-                    color: 'white',
-                    backgroundColor: 'primary.main',
-                    boxShadow: '0 4px 12px rgba(0, 131, 143, 0.3)',
+                    color: 'primary.main',
                   },
                   '&:hover': {
-                    backgroundColor: 'rgba(0, 131, 143, 0.08)',
+                    backgroundColor: 'rgba(0, 131, 143, 0.04)',
                   }
                 },
               }}
