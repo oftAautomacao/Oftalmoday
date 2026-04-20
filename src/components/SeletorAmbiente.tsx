@@ -59,9 +59,9 @@ const SeletorAmbiente: React.FC = () => {
           size="small"
           sx={{
             padding: '8px',
-            color: 'white',
+            color: 'primary.main',
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              backgroundColor: 'rgba(25, 118, 210, 0.1)'
             }
           }}
           disabled={carregando}

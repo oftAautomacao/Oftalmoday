@@ -22,6 +22,7 @@ import ReconfirmacaoPacientes from '../components/ReconfirmacaoPacientes';
 import PacientesFaltosos from '../components/PacientesFaltosos';
 import PesquisaSatisfacao from '../components/PesquisaSatisfacao';
 import AppHeader from '../components/AppHeader';
+import SeletorAmbiente from '../components/SeletorAmbiente';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -221,58 +222,141 @@ function Principal() {
 
   return (
     <>
-      <AppHeader />
-
       <Container
         maxWidth="xl"
         sx={{
           mt: 4,
           backgroundImage: 'linear-gradient(180deg, #e3edff 0%, #f5faff 100%)',
-          borderRadius: 2,
-          p: 2,
+          borderRadius: '40px',
+          p: 3,
         }}
       >
-        <Paper sx={{ mb: 3, boxShadow: '0 4px 14px rgba(0,0,0,0.08)', borderRadius: 2 }}>
-          <Tabs value={aba} onChange={(_, v: number) => setAba(v)} centered>
-            <Tab label="Confirmação Pacientes" />
-            <Tab label="Reconfirmação Pacientes" />
-            <Tab label="Pacientes Faltosos" />
-            <Tab label="Pesquisa de Satisfação" />
-            <Tab label="Pacientes Bloqueados" />
-          </Tabs>
-        </Paper>
+        {/* Layout Exclamação Deitada */}
+        <Box 
+          sx={{ 
+            mb: 4, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, // Espaço entre o ponto (logo) e o traço (abas)
+          }}
+        >
+          {/* O "Ponto" da Exclamação: Logo Circular */}
+          <Paper
+            sx={{
+              height: 60,
+              width: 60,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
+              flexShrink: 0
+            }}
+          >
+            <Box
+              component="img"
+              src="/logo Lobo Olho.jpg"
+              alt="Dr. Antônio Lobo"
+              sx={{
+                height: 44,
+                width: 44,
+                borderRadius: '50%',
+                objectFit: 'contain'
+              }}
+            />
+          </Paper>
+
+          {/* O "Traço" da Exclamação: Barra de Navegação */}
+          <Paper 
+            sx={{ 
+              flexGrow: 1,
+              height: 60,
+              p: 1,
+              px: 3,
+              boxShadow: '0 6px 20px rgba(0,0,0,0.08)', 
+              borderRadius: '60px', // Acompanha a redução de altura
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#ffffff'
+            }}
+          >
+            {/* Abas no Centro com Estilo Pílula */}
+            <Tabs 
+              value={aba} 
+              onChange={(_, v: number) => setAba(v)} 
+              centered
+              sx={{
+                flexGrow: 1,
+                '& .MuiTabs-indicator': {
+                  display: 'none',
+                },
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  minWidth: 160,
+                  color: 'text.secondary',
+                  margin: '0 4px',
+                  borderRadius: '30px',
+                  transition: 'all 0.3s ease',
+                  '&.Mui-selected': {
+                    color: 'white',
+                    backgroundColor: 'primary.main',
+                    boxShadow: '0 4px 12px rgba(0, 131, 143, 0.3)',
+                  },
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 131, 143, 0.08)',
+                  }
+                },
+              }}
+            >
+              <Tab label="Confirmação Pacientes" />
+              <Tab label="Reconfirmação Pacientes" />
+              <Tab label="Pacientes Faltosos" />
+              <Tab label="Pesquisa de Satisfação" />
+              <Tab label="Pacientes Bloqueados" />
+            </Tabs>
+
+            {/* Engrenagem à Direita */}
+            <Box sx={{ ml: 2 }}>
+              <SeletorAmbiente />
+            </Box>
+          </Paper>
+        </Box>
 
         {/* Aba 0 – confirmação pacientes */}
         {aba === 0 && (
-          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 8px 16px rgba(0,0,0,0.05)', borderRadius: '32px' }}>
             <ConfirmacaoPacientes />
           </Paper>
         )}
 
         {/* Aba 1 – reconfirmação pacientes */}
         {aba === 1 && (
-          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 8px 16px rgba(0,0,0,0.05)', borderRadius: '32px' }}>
             <ReconfirmacaoPacientes />
           </Paper>
         )}
 
         {/* Aba 2 – Pacientes Faltosos */}
         {aba === 2 && (
-          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 8px 16px rgba(0,0,0,0.05)', borderRadius: '32px' }}>
             <PacientesFaltosos />
           </Paper>
         )}
 
         {/* Aba 3 – Pesquisa de Satisfação */}
         {aba === 3 && (
-          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 8px 16px rgba(0,0,0,0.05)', borderRadius: '32px' }}>
             <PesquisaSatisfacao />
           </Paper>
         )}
 
         {/* Aba 4 – bloqueados */}
         {aba === 4 && (
-          <Paper sx={{ p: 2, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 2 }}>
+          <Paper sx={{ p: 2, boxShadow: '0 8px 16px rgba(0,0,0,0.05)', borderRadius: '32px' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
               <TextField
                 size="small"
