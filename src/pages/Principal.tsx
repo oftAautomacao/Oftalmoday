@@ -21,7 +21,6 @@ import ConfirmacaoPacientes from '../components/ConfirmacaoPacientes';
 import ReconfirmacaoPacientes from '../components/ReconfirmacaoPacientes';
 import PacientesFaltosos from '../components/PacientesFaltosos';
 import PesquisaSatisfacao from '../components/PesquisaSatisfacao';
-import AppHeader from '../components/AppHeader';
 import SeletorAmbiente from '../components/SeletorAmbiente';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
