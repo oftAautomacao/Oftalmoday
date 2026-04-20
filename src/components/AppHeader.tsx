@@ -6,23 +6,22 @@ const AppHeader = () => {
   return (
     <AppBar position="static" sx={{ backgroundColor: '#1976d2' }}>
       <Toolbar>
-        {/* Logo aumentada */}
         <Box
           component="img"
-          src="/logo pequena.png"
-          alt="Logo OftalmoDay"
+          src="/logo Lobo Olho.jpg"
+          alt="Dr. Antônio Lobo - Olho"
           sx={{
-            height: 50, // Aumentado de 40 para 50
-            width: 'auto',
+            height: 60, // Tamanho ajustado para um ícone circular
+            width: 60,
             marginRight: 2,
             backgroundColor: 'white',
-            padding: '6px', // Aumentado de 4px para 6px
-            borderRadius: '4px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            padding: '2px',
+            borderRadius: '50%', // Formato circular para o olho
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            objectFit: 'contain'
           }}
         />
         
-        {/* Espaço vazio para alinhar o SeletorAmbiente à direita */}
         <Box sx={{ flexGrow: 1 }} />
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
