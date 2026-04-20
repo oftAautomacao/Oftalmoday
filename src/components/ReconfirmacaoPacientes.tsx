@@ -758,12 +758,32 @@ const ReconfirmacaoPacientes: React.FC = () => {
     return true;
   };
 
+  // Para reconfirmação, envia no mesmo dia do agendamento (cedo)
+  const calcularDiaEnvio = (dataStr: string): Date | null => {
+    if (!dataStr) return null;
+    const parts = String(dataStr).split(' ')[0].split('/');
+    if (parts.length !== 3) return null;
+    const [dia, mes, ano] = parts.map(Number);
+    if (!dia || !mes || !ano) return null;
+    return new Date(ano, mes - 1, dia); // Mesmo dia
+  };
+
+  const formatarDataEnvio = (data: Date): string => {
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const ano = data.getFullYear();
+    const diasSemana = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+    return `${diasSemana[data.getDay()]}, ${dia}/${mes}/${ano}`;
+  };
+
   // Métricas de Envio (agora com filtro)
   const metricasEnvio = useMemo(() => {
     let comTemplate = 0;
     let semTemplate = 0;
     let erros = 0;
     let naoEnviados = 0;
+    let manual = 0;
+    let remarcados = 0;
     const listaCompletaEnvio: any[] = [];
 
     if (dados.aEnviar) {
@@ -774,11 +794,21 @@ const ReconfirmacaoPacientes: React.FC = () => {
 
         let pStatus = 'Não Enviado';
         let pMetodo = 'Não informado';
+        let remarcado = false;
+
+        // Verifica se há dados de envio automático
+        const temDadosEnvioAuto = !!(paciente.Metodo || paciente.Status || paciente.response);
+        const temCopiado = paciente.Copiado === true;
 
         if (paciente.Status === 'failed') {
           erros++;
           pStatus = 'Erro';
-        } else if (paciente.Metodo) {
+          // Mensagem enviada (com erro) mas caixinha não marcada = paciente remarcou
+          if (!temCopiado) {
+            remarcado = true;
+            remarcados++;
+          }
+        } else if (temDadosEnvioAuto) {
           pStatus = 'Sucesso';
           if (String(paciente.Metodo).toLowerCase().includes('com template')) {
             comTemplate++;
@@ -787,41 +817,48 @@ const ReconfirmacaoPacientes: React.FC = () => {
             semTemplate++;
             pMetodo = 'Sem Template';
           } else {
-            pMetodo = paciente.Metodo;
+            pMetodo = paciente.Metodo || 'Não informado';
           }
+          // Mensagem enviada automaticamente mas caixinha não marcada = paciente remarcou
+          if (!temCopiado) {
+            remarcado = true;
+            remarcados++;
+          }
+        } else if (temCopiado) {
+          // Caixinha marcada mas sem dados de envio automático = envio foi manual
+          pMetodo = 'Manual';
+          pStatus = 'Sucesso';
+          manual++;
         }
 
-        let skip = false;
-        if (pStatus === 'Não Enviado' && paciente.DataMarcada) {
-          const dataStr = String(paciente.DataMarcada).split(' ')[0];
-          const parts = dataStr.split('/');
-          if (parts.length === 3) {
-            const dataAgendamento = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-            dataAgendamento.setHours(0, 0, 0, 0);
-            
+        // Calcula a data de envio prevista com base no dia do agendamento
+        let atrasado = false;
+        let dataEnvioCalculada: string | null = null;
+        if (paciente.DataMarcada) {
+          const dEnvio = calcularDiaEnvio(String(paciente.DataMarcada));
+          if (dEnvio) {
+            dataEnvioCalculada = formatarDataEnvio(dEnvio);
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
-            const limiteFuturo = new Date(hoje);
-            limiteFuturo.setDate(hoje.getDate() + 3);
-
-            if (dataAgendamento.getTime() > limiteFuturo.getTime()) {
-              skip = true;
+            if (dEnvio < hoje) {
+              atrasado = true;
             }
           }
         }
 
-        if (!skip) {
-          if (pStatus === 'Não Enviado') {
-            naoEnviados++;
-          }
-
-          listaCompletaEnvio.push({
-            ...paciente,
-            id,
-            StatusEnvio: pStatus,
-            MetodoEnvio: pMetodo
-          });
+        if (pStatus === 'Não Enviado') {
+          naoEnviados++;
         }
+
+        listaCompletaEnvio.push({
+          ...paciente,
+          id,
+          StatusEnvio: pStatus,
+          MetodoEnvio: pMetodo,
+          remarcado,
+          dataEnvioCalculada,
+          atrasado
+        });
       });
     }
 
@@ -839,6 +876,8 @@ const ReconfirmacaoPacientes: React.FC = () => {
       semTemplate, 
       erros, 
       naoEnviados,
+      manual,
+      remarcados,
       listaCompletaEnvio, 
       custo: comTemplate * 0.04 
     };
@@ -1259,13 +1298,23 @@ const ReconfirmacaoPacientes: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{metricasEnvio.semTemplate}</Typography>
               </Paper>
 
+              <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#e8f5e9', justifyContent: 'center' }}>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Envio Manual</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>{metricasEnvio.manual}</Typography>
+              </Paper>
+
+              <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#fff8e1', justifyContent: 'center' }}>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Remarcados</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#e65100' }}>{metricasEnvio.remarcados}</Typography>
+              </Paper>
+
               <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#ffebee', justifyContent: 'center' }}>
                 <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Erros</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>{metricasEnvio.erros}</Typography>
               </Paper>
 
               <Paper sx={{ p: 1.5, flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f5f5f5', justifyContent: 'center' }}>
-                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Não Enviados Pelo Programa</Typography>
+                <Typography variant="subtitle2" align="center" color="textSecondary" sx={{ minHeight: 40 }}>Não Enviadas</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{metricasEnvio.naoEnviados}</Typography>
               </Paper>
 
@@ -1280,23 +1329,116 @@ const ReconfirmacaoPacientes: React.FC = () => {
                 rows={metricasEnvio.listaCompletaEnvio}
                 columns={[
                   { field: 'DataMarcada', headerName: 'Data Agendada', width: 140 },
-                  { field: 'Paciente', headerName: 'Paciente', flex: 1, minWidth: 200 },
+                  { 
+                    field: 'Paciente', 
+                    headerName: 'Paciente', 
+                    flex: 1, 
+                    minWidth: 200,
+                    renderCell: (params: any) => (
+                      <Tooltip title="Duplo clique para buscar na aba Pacientes">
+                        <Box 
+                          onDoubleClick={() => {
+                            setSearch(params.value);
+                            setTabAtiva(0); // Muda para a aba Pacientes
+                          }}
+                          sx={{ 
+                            cursor: 'pointer', 
+                            '&:hover': { textDecoration: 'underline', color: 'primary.main' },
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {params.value}
+                        </Box>
+                      </Tooltip>
+                    )
+                  },
                   { field: 'TelefoneRes', headerName: 'Telefone', width: 150, renderCell: (params: any) => params.row.WhatsAppCel || params.row.TelefoneCel || params.row.TelefoneRes || 'Não informado' },
                   { 
                     field: 'StatusEnvio', 
                     headerName: 'Status', 
                     width: 120,
+                    renderCell: (params: any) => {
+                      let color = 'text.secondary';
+                      if (params.value === 'Sucesso') color = 'success.main';
+                      else if (params.value === 'Erro') color = 'error.main';
+                      else if (params.value === 'Não Enviado') {
+                        color = params.row.atrasado ? 'error.main' : 'text.secondary';
+                      }
+                      
+                      return (
+                        <Box sx={{ color, fontWeight: 'bold' }}>
+                          {params.value}
+                        </Box>
+                      );
+                    }
+                  },
+                  { 
+                    field: 'MetodoEnvio', 
+                    headerName: 'Método', 
+                    width: 170,
+                    renderCell: (params: any) => {
+                      if (params.value === 'Manual') {
+                        return (
+                          <Box sx={{
+                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                            bgcolor: '#e8f5e9', color: '#2e7d32', border: '1px solid #a5d6a7',
+                            borderRadius: '4px', px: 1.5, py: 0.5,
+                            fontSize: '0.8rem', fontWeight: 'bold'
+                          }}>
+                            ✋ Manual
+                          </Box>
+                        );
+                      }
+                      return <span>{params.value || '—'}</span>;
+                    }
+                  },
+                  { 
+                    field: 'response', 
+                    headerName: 'Detalhes/Erro', 
+                    flex: 2, 
+                    minWidth: 280,
                     renderCell: (params: any) => (
-                      <Box sx={{ 
-                        color: params.value === 'Sucesso' ? 'success.main' : params.value === 'Erro' ? 'error.main' : 'text.secondary',
-                        fontWeight: 'bold'
-                      }}>
-                        {params.value}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, py: 0.5, width: '100%' }}>
+                        {/* Badge: Paciente Remarcado */}
+                        {params.row.remarcado && (
+                          <Box sx={{
+                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                            bgcolor: '#fff3e0', color: '#e65100', border: '1px solid #ffcc80',
+                            borderRadius: '4px', px: 1, py: 0.25,
+                            fontSize: '0.75rem', fontWeight: 'bold', width: 'fit-content'
+                          }}>
+                            ⚠️ Paciente Remarcado
+                          </Box>
+                        )}
+                        {/* Dia de reenvio para remarcados */}
+                        {params.row.remarcado && params.row.dataEnvioCalculada && (
+                          <Box sx={{ fontSize: '0.75rem', color: '#b03000', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            📅 <strong>Confirmar novamente em:</strong>&nbsp;{params.row.dataEnvioCalculada}
+                          </Box>
+                        )}
+                        {/* Data prevista de envio para mensagens ainda não enviadas */}
+                        {params.row.StatusEnvio === 'Não Enviado' && params.row.dataEnvioCalculada && (
+                          <Box sx={{
+                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                            bgcolor: '#e3f2fd', color: '#1565c0', border: '1px solid #90caf9',
+                            borderRadius: '4px', px: 1, py: 0.25,
+                            fontSize: '0.75rem', fontWeight: 'bold', width: 'fit-content'
+                          }}>
+                            📅 Envio previsto: {params.row.dataEnvioCalculada}
+                          </Box>
+                        )}
+                        {/* Response original */}
+                        {params.row.response && (
+                          <Box sx={{ fontSize: '0.8rem', color: 'text.secondary', wordBreak: 'break-word' }}>
+                            {params.row.response}
+                          </Box>
+                        )}
                       </Box>
                     )
-                  },
-                  { field: 'MetodoEnvio', headerName: 'Método', width: 150 },
-                  { field: 'response', headerName: 'Detalhes/Erro', flex: 2, minWidth: 250 }
+                  }
                 ]}
                 autoHeight
                 disableRowSelectionOnClick
