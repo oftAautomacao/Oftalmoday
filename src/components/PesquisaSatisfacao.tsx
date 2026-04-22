@@ -806,6 +806,7 @@ const PesquisaSatisfacao: React.FC = () => {
     let naoEnviados = 0;
     let manual = 0;
     let remarcados = 0;
+    let isentoCampoVisual = 0;
     const listaCompletaEnvio: any[] = [];
 
     if (dados.aEnviar) {
@@ -821,7 +822,14 @@ const PesquisaSatisfacao: React.FC = () => {
         const temDadosEnvioAuto = !!(paciente.Metodo || paciente.Status || paciente.response);
         const temCopiado = paciente.Copiado === true;
 
-        if (paciente.Status === 'failed') {
+        const isCampoVisual = String(paciente.Medico || '').trim().toUpperCase() === 'CAMPO VISUAL';
+
+        if (isCampoVisual) {
+          pMetodo = 'Não se aplica';
+          pStatus = 'Não Enviado';
+          isentoCampoVisual++;
+          paciente.response = 'Não enviamos pesquisa de satisfação para pacientes de Campo Visual.';
+        } else if (paciente.Status === 'failed') {
           erros++;
           pStatus = 'Erro';
           if (!temCopiado) {
@@ -895,6 +903,7 @@ const PesquisaSatisfacao: React.FC = () => {
       naoEnviados,
       manual,
       remarcados,
+      isentoCampoVisual,
       listaCompletaEnvio, 
       custo: comTemplate * 0.04 
     };
@@ -1381,7 +1390,9 @@ const PesquisaSatisfacao: React.FC = () => {
                         if (params.value === 'Sucesso') color = 'success.main';
                         else if (params.value === 'Erro') color = 'error.main';
                         else if (params.value === 'Não Enviado') {
-                          color = params.row.atrasado ? 'error.main' : 'text.secondary';
+                          // Se for isento (Não se aplica), usa cor neutra, senão checa atraso
+                          if (params.row.MetodoEnvio === 'Não se aplica') color = 'text.disabled';
+                          else color = params.row.atrasado ? 'error.main' : 'text.secondary';
                         }
                         
                         return (
@@ -1405,6 +1416,18 @@ const PesquisaSatisfacao: React.FC = () => {
                               fontSize: '0.8rem', fontWeight: 'bold'
                             }}>
                               ✋ Manual
+                            </Box>
+                          );
+                        }
+                        if (params.value === 'Não se aplica') {
+                          return (
+                            <Box sx={{
+                              display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                              bgcolor: '#f5f5f5', color: '#757575', border: '1px solid #e0e0e0',
+                              borderRadius: '4px', px: 1.5, py: 0.5,
+                              fontSize: '0.8rem', fontWeight: 'bold'
+                            }}>
+                              🚫 Não se aplica
                             </Box>
                           );
                         }
@@ -1433,7 +1456,7 @@ const PesquisaSatisfacao: React.FC = () => {
                               📅 <strong>Confirmar novamente em:</strong>&nbsp;{params.row.dataEnvioCalculada}
                             </Box>
                           )}
-                          {params.row.StatusEnvio === 'Não Enviado' && params.row.dataEnvioCalculada && (
+                          {params.row.StatusEnvio === 'Não Enviado' && params.row.dataEnvioCalculada && params.row.MetodoEnvio !== 'Não se aplica' && (
                             <Box sx={{
                               display: 'inline-flex', alignItems: 'center', gap: 0.5,
                               bgcolor: '#e3f2fd', color: '#1565c0', border: '1px solid #90caf9',
